@@ -33,6 +33,18 @@ GridRange ToUiGridRange(const QItemSelectionRange& range) {
                           range.width());
 }
 
+// Widens every horizontal section to the width `model` hints for it. Never
+// narrows: a section's current size is the header's default, which some
+// columns' content already relies on.
+void SizeSectionsToHints(QHeaderView& header, const QAbstractItemModel& model) {
+  for (int i = 0; i < header.count(); ++i) {
+    const int hint =
+        model.headerData(i, Qt::Horizontal, Qt::SizeHintRole).toSize().width();
+    if (hint > header.sectionSize(i))
+      header.resizeSection(i, hint);
+  }
+}
+
 }  // namespace
 
 Grid::Grid(std::shared_ptr<GridModel> model,
@@ -52,6 +64,16 @@ Grid::Grid(std::shared_ptr<GridModel> model,
   verticalHeader()->setDefaultSectionSize(19);
   setModel(&model_adapter_);
   resizeColumnsToContents();
+  // Columns that arrive after construction — a node table's columns are set
+  // once its type is known — came up at the header's default section size,
+  // neither their configured width nor wide enough for their title, so a bulk
+  // grid's long headers were clipped at both ends (UX audit 2026-11-25, item
+  // 4.3). A changed column set is announced as a reset (GridModelAdapter), so
+  // widen each section to its hint then: the configured width, or the title if
+  // that is wider. A saved layout restored afterwards still wins.
+  QObject::connect(
+      &model_adapter_, &QAbstractItemModel::modelReset, this,
+      [this] { SizeSectionsToHints(*horizontalHeader(), model_adapter_); });
   setItemDelegate(&item_delegate_);
   setWordWrap(false);
 

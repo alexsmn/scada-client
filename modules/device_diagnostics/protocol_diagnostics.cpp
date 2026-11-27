@@ -15,8 +15,8 @@ namespace {
 // forms no definition of a link error, and InflightRetransmits is retries, not
 // errors.
 constexpr std::array<ProtocolField, 9> kIec60870LinkFields{{
-    {scada::devices::id::Iec60870LinkType_LinkState, "LinkState", "State",
-     ProtocolValueShape::kState},
+    {scada::devices::id::Iec60870LinkType_LinkState, "LinkState",
+     "Connection state", ProtocolValueShape::kState},
     {scada::devices::id::Iec60870LinkType_LastConnected, "LastConnected",
      "Last connected", ProtocolValueShape::kTime},
     {scada::devices::id::Iec60870LinkType_RoundTripTime, "RoundTripTime",
@@ -73,4 +73,14 @@ std::string_view Iec60870LinkStateLabel(int state) {
     default:
       return "Unknown";
   }
+}
+
+std::string_view DeviceDownDetail(std::optional<int> link_state) {
+  if (!link_state)
+    return "no response from device";
+  // Running (0x0004) and Test (0x0008) both mean the TCP connection carries
+  // frames; anything else means it does not.
+  if (*link_state == 0x0004 || *link_state == 0x0008)
+    return "link is up; the device does not answer";
+  return "the link is down";
 }

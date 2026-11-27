@@ -1,6 +1,7 @@
 
 #include "aui/qt/table.h"
 #include "aui/qt/elide_path.h"
+#include "aui/qt/header_width.h"
 #include "aui/qt/image_util.h"
 
 #include "aui/models/table_model.h"
@@ -60,16 +61,20 @@ bool TableProxyModel::lessThan(const QModelIndex& source_left,
 // (design-language.md §3 tabular numerals). A user-saved window state still
 // overrides this via RestoreState.
 int DefaultColumnWidth(const TableColumn& column) {
+  // Never narrower than the column's own title (UX audit 2026-11-25, item
+  // 4.3): «Метка времени источника» was clipped to «етка времени источника».
+  const int title_width =
+      HeaderTitleWidth(QString::fromStdU16String(column.title));
   if (!column.monospace && column.data_type != TableColumn::DataType::DateTime)
-    return column.width;
+    return std::max(column.width, title_width);
   const QString sample = QStringLiteral("00.00.0000 00:00:00.000");
   const int ui_advance =
       QFontMetrics{QGuiApplication::font()}.horizontalAdvance(sample);
   const int mono_advance =
       QFontMetrics{MonoValueFont()}.horizontalAdvance(sample);
   if (ui_advance <= 0 || mono_advance <= ui_advance)
-    return column.width;
-  return column.width * mono_advance / ui_advance;
+    return std::max(column.width, title_width);
+  return std::max(column.width * mono_advance / ui_advance, title_width);
 }
 
 // Draws a `TableColumn::path_separator` column: the stock delegate, with the

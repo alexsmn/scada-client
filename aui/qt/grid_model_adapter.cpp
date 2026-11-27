@@ -4,6 +4,7 @@
 #include "aui/color.h"
 #include "aui/models/grid_range.h"
 #include "aui/qt/color_role_qt.h"
+#include "aui/qt/header_width.h"
 #include "aui/severity_colors.h"
 #include "base/check.h"
 
@@ -173,9 +174,18 @@ QVariant GridModelAdapter::headerData(int section,
   if (orientation == Qt::Horizontal) {
     switch (role) {
       case Qt::DisplayRole:
+      case Qt::ToolTipRole:
+        // The tooltip carries the full title wherever the user has narrowed
+        // the section below it.
         return QString::fromStdU16String(column_model_->GetTitle(section));
       case Qt::SizeHintRole:
-        return QSize(column_model_->GetSize(section), 19);
+        // Never narrower than the title: resizeColumnsToContents reads this
+        // hint, and the configured size alone clipped long titles at both
+        // ends (UX audit 2026-11-25, item 4.3).
+        return QSize(std::max(column_model_->GetSize(section),
+                              HeaderTitleWidth(QString::fromStdU16String(
+                                  column_model_->GetTitle(section)))),
+                     19);
       default:
         return QVariant();
     }

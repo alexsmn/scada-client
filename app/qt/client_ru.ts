@@ -1251,6 +1251,22 @@
         <translation>устройство не отвечает</translation>
     </message>
     <message>
+        <source>link is up; the device does not answer</source>
+        <translation>соединение работает, устройство не отвечает</translation>
+    </message>
+    <message>
+        <source>the link is down</source>
+        <translation>соединение не работает</translation>
+    </message>
+    <message>
+        <source>Connection state</source>
+        <translation>Состояние соединения</translation>
+    </message>
+    <message>
+        <source>ms</source>
+        <translation>мс</translation>
+    </message>
+    <message>
         <source>device is not polled</source>
         <translation>устройство не опрашивается</translation>
     </message>

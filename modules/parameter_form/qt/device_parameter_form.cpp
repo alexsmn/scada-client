@@ -2,6 +2,7 @@
 
 #include "aui/dialog_service.h"
 #include "aui/models/property_model.h"
+#include "aui/qt/header_width.h"
 #include "aui/qt/theme_qt.h"
 #include "aui/severity_colors.h"
 #include "aui/translation.h"
@@ -168,7 +169,24 @@ void DeviceParameterForm::AddFieldRows(QFormLayout& form,
                                        const std::vector<int>& field_indices) {
   const scada::aui::ThemeTokens& tokens = FormTokens();
 
+  // A group's plain fields come before its headed sections. In model order, a
+  // field after the last section rendered under that section's heading: on a
+  // data item's Каналы tab «Условие управления» (control condition) and
+  // «Устаревание» read as part of «Резервный ввод» (backup input), and an
+  // engineer reading the form took the interlock for a backup-channel setting
+  // (UX audit 2026-11-25, item 4.4). The sections keep their own order.
+  std::vector<int> ordered;
+  ordered.reserve(field_indices.size());
   for (int index : field_indices) {
+    if (!group.GetSubgroup(index))
+      ordered.push_back(index);
+  }
+  for (int index : field_indices) {
+    if (group.GetSubgroup(index))
+      ordered.push_back(index);
+  }
+
+  for (int index : ordered) {
     // A hierarchical property — a data item's «Основной ввод» with its
     // Устройство and Канал — is a subgroup inside the category. It renders as
     // a headed run of its own fields. Until 2026-11-22 the form skipped it, so
@@ -432,6 +450,14 @@ QTableWidget* MakeReadOnlyGrid(const QString& object_name,
   table->verticalHeader()->setVisible(false);
   table->horizontalHeader()->setStretchLastSection(true);
   table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+  // No column narrower than its title: adding the address map's Status column
+  // squeezed «Идентификатор узла» to «нтификатор у» (UX audit 2026-11-25,
+  // item 4.3).
+  for (int i = 1; i < headers.size(); ++i) {
+    table->horizontalHeader()->resizeSection(
+        i, std::max(table->horizontalHeader()->sectionSize(i),
+                    scada::aui::HeaderTitleWidth(headers[i])));
+  }
   table->setStyleSheet(
       QStringLiteral("QTableWidget{background:%1;color:%2;border:none;"
                      "gridline-color:%3;}"
@@ -481,9 +507,19 @@ QWidget* DeviceParameterForm::BuildAddressMapPage() {
         return row.kind == AddressMapRow::Kind::kTransmission;
       });
 
+  // A Status column only when something conflicts: two signals at one
+  // address of the same direction. The transmission rules view flagged this
+  // and the address map did not, so the same pair read as fine here (UX audit
+  // 2026-11-25, item 4.1). Word and glyph, never colour alone (§5).
+  const std::vector<bool> duplicates = FindDuplicateAddresses(address_map_);
+  const bool any_duplicate =
+      std::ranges::find(duplicates, true) != duplicates.end();
+
   QStringList headers{Tr("Signal"), Tr("Type"), Tr("IOA"), Tr("NodeId")};
   if (mixed)
     headers.insert(1, Tr("Direction"));
+  if (any_duplicate)
+    headers.append(Tr("Status"));
   QTableWidget* table = MakeReadOnlyGrid(QStringLiteral("addressMapTable"),
                                          headers, FormTokens());
   table->setRowCount(static_cast<int>(address_map_.size()));
@@ -495,6 +531,11 @@ QWidget* DeviceParameterForm::BuildAddressMapPage() {
                       QString::fromStdU16String(data.node_id)};
     if (mixed)
       cells.insert(1, AddressMapKindText(data.kind));
+    if (any_duplicate) {
+      cells.append(duplicates[row]
+                       ? QStringLiteral("\u26A0 ") + Tr("Duplicate address")
+                       : QString{});
+    }
     FillGridRow(table, row, cells);
   }
   return table;

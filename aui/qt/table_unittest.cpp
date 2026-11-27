@@ -1,6 +1,7 @@
 #include "aui/qt/table.h"
 
 #include "aui/models/table_model.h"
+#include "aui/qt/header_width.h"
 #include "aui/qt/theme_qt.h"
 #include "aui/severity_colors.h"
 #include "aui/test/app_environment.h"
@@ -85,6 +86,18 @@ class TableTest : public testing::Test {
 // measured 170 vs 170 (scada-client run 40138625293), because offscreen Qt
 // there had no fonts at all and both faces were the same fallback; the
 // workflow now names C:\Windows\Fonts as QT_QPA_FONTDIR.
+// UX audit 2026-11-25, item 4.3: a column's default width never clips its own
+// title — «Метка времени источника» rendered as «етка времени источника».
+TEST_F(TableTest, ADefaultWidthNeverClipsTheTitle) {
+  constexpr std::u16string_view kLongTitle = u"Source timestamp of the value";
+  std::vector<TableColumn> columns{
+      {kTitleColumn, std::u16string{kLongTitle}, 20, TableColumn::LEFT}};
+  Table table{std::make_shared<StubTableModel>(), std::move(columns)};
+  EXPECT_GE(table.columnWidth(kTitleColumn),
+            HeaderTitleWidth(
+                QString::fromUtf16(kLongTitle.data(), kLongTitle.size())));
+}
+
 TEST_F(TableTest, MonospaceColumnDefaultsWidenWithTheFont) {
   const QString sample = QStringLiteral("00.00.0000 00:00:00.000");
   const bool mono_is_wider =

@@ -10,6 +10,7 @@
 #include <gtest/gtest.h>
 
 #include <QComboBox>
+#include <QFormLayout>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
@@ -225,6 +226,60 @@ TEST_F(DeviceParameterFormTest, RendersAndAppliesNestedGroupFields) {
   ASSERT_EQ(input_ptr->writes.size(), 1u);
   EXPECT_EQ(input_ptr->writes[0].first, 1);
   EXPECT_EQ(input_ptr->writes[0].second, u"INT16:40771");
+}
+
+// UX audit 2026-11-25, item 4.4: a plain field the model lists after a section
+// is laid out before the sections, so it never reads as part of the section
+// above it — «Условие управления» used to sit under «Резервный ввод».
+TEST_F(DeviceParameterFormTest, PlainFieldsComeBeforeSections) {
+  auto backup = std::make_unique<FakeGroup>();
+  backup->AddLeaf(u"Backup channel", u"");
+  auto channels = std::make_unique<FakeGroup>();
+  channels->AddLeaf(u"Lock", u"No")
+      .AddSection(u"Backup input", std::move(backup))
+      .AddLeaf(u"Control condition", u"TIT.211 < 70");
+  auto root = std::make_unique<FakeGroup>();
+  root->AddSection(u"Channels", std::move(channels));
+  FakeModel model{std::move(root)};
+
+  DeviceParameterForm form{model, QStringLiteral("TIT.212")};
+
+  auto* form_layout = form.findChild<QFormLayout*>();
+  ASSERT_NE(form_layout, nullptr);
+  QStringList order;
+  for (int row = 0; row < form_layout->rowCount(); ++row) {
+    QLayoutItem* item = form_layout->itemAt(row, QFormLayout::LabelRole);
+    if (!item)
+      item = form_layout->itemAt(row, QFormLayout::SpanningRole);
+    if (auto* label = item ? qobject_cast<QLabel*>(item->widget()) : nullptr)
+      order.append(label->text());
+  }
+  EXPECT_EQ(order, (QStringList{QStringLiteral("Lock"),
+                                QStringLiteral("Control condition"),
+                                QStringLiteral("Backup input"),
+                                QStringLiteral("Backup channel")}));
+}
+
+// UX audit 2026-11-25, item 4.1: the address map flags two signals at one
+// address, as the transmission rules view does, in a Status column that
+// appears only when something conflicts.
+TEST_F(DeviceParameterFormTest, AddressMapFlagsDuplicateAddresses) {
+  auto model = MakeDeviceModel();
+  DeviceParameterForm form{*model, QStringLiteral("RTU-02")};
+
+  form.SetAddressMap({
+      {u"Ua", u"TI", u"2001", u"ns=2;s=Ua"},
+      {u"Ua average", u"TI", u"2001", u"ns=2;s=Uavg"},
+      {u"TC1", u"TI", u"1001", u"ns=2;s=TC1"},
+  });
+
+  auto* table =
+      form.findChild<QTableWidget*>(QStringLiteral("addressMapTable"));
+  ASSERT_NE(table, nullptr);
+  ASSERT_EQ(table->columnCount(), 5);
+  EXPECT_FALSE(table->item(0, 4)->text().isEmpty());
+  EXPECT_FALSE(table->item(1, 4)->text().isEmpty());
+  EXPECT_TRUE(table->item(2, 4)->text().isEmpty());
 }
 
 // Choices streamed into a dropdown after it is built must not change what it

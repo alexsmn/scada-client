@@ -1,6 +1,8 @@
 #pragma once
 
+#include <span>
 #include <string>
+#include <vector>
 
 // One row of a device's address-map preview (config-workbench.html): a signal
 // (information object) and its protocol addressing. Plain data with no Qt, so
@@ -24,3 +26,12 @@ struct AddressMapRow {
   std::u16string node_id;  // the source node's id.
   Kind kind = Kind::kTransmission;
 };
+
+// For each row of `rows`, whether another row of the same kind has the same
+// address. Two retransmitted signals at one IOA silently corrupt what the
+// superior station receives, and two polled signals at one address read the
+// same value; the transmission rules view flags the first case, and the device
+// form's address map now flags both (UX audit 2026-11-25, item 4.1). A polled
+// row and a transmitted row at one address are two directions, not a
+// conflict. Rows with no address never conflict.
+std::vector<bool> FindDuplicateAddresses(std::span<const AddressMapRow> rows);

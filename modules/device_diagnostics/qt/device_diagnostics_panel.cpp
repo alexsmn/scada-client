@@ -145,7 +145,7 @@ QString FormatShaped(const scada::Variant& value, ProtocolValueShape shape) {
       return {};
     case ProtocolValueShape::kDuration:
       if (double ms; value.get(ms))
-        return QStringLiteral("%1 ms").arg(std::llround(ms));
+        return QStringLiteral("%1 ").arg(std::llround(ms)) + Tr("ms");
       return {};
     case ProtocolValueShape::kTime:
       // The zero instant is not a reading: a link that has never connected has
@@ -257,6 +257,9 @@ QWidget* DeviceDiagnosticsPanel::BuildContent() {
   hero_status_ = new QLabel;
   hero_status_->setObjectName(QStringLiteral("diagnosticsHeroStatus"));
   hero_detail_ = new QLabel;
+  // Wraps rather than widening the dock: the detail can now say which side
+  // failed («соединение работает, устройство не отвечает»).
+  hero_detail_->setWordWrap(true);
   hero_detail_->setStyleSheet(
       QStringLiteral("color:%1;font-size:11px;").arg(tokens.fg_subtle.name()));
   hero_layout->addWidget(hero_status_);
@@ -517,9 +520,21 @@ void DeviceDiagnosticsPanel::RefreshFromSpecs() {
       VariantIsTruthy(CurrentValue(online_spec_.get(), online_node_));
   const DeviceLinkBand band = DeviceLinkBandFor(enabled, online);
 
+  // The link's APCI state, when the device's protocol shows one: it decides
+  // whether «Нет связи» means the device or the connection under it.
+  std::optional<int> link_state;
+  for (const Reading& reading : link_readings_) {
+    if (reading.shape != ProtocolValueShape::kState)
+      continue;
+    if (scada::Int32 state;
+        CurrentValue(reading.spec.get(), reading.node).get(state)) {
+      link_state = state;
+    }
+  }
+
   QString detail;
   if (band == DeviceLinkBand::kDown)
-    detail = Tr("no response from device");
+    detail = Tr(DeviceDownDetail(link_state));
   else if (band == DeviceLinkBand::kDisabled)
     detail = Tr("device is not polled");
 
@@ -531,9 +546,14 @@ void DeviceDiagnosticsPanel::RefreshFromSpecs() {
                                        /*bad=*/false,
                                        /*heading=*/true});
     for (const Reading& reading : link_readings_) {
-      QString value = FormatShaped(
-          CurrentValue(reading.spec.get(), reading.node), reading.shape);
-      rows.push_back(DeviceDiagnosticRow{reading.label, value, /*bad=*/false});
+      const scada::Variant current =
+          CurrentValue(reading.spec.get(), reading.node);
+      QString value = FormatShaped(current, reading.shape);
+      // An expired t1 is a fault, and reads as one beside the link state.
+      bool expired = false;
+      const bool bad = reading.shape == ProtocolValueShape::kFlag &&
+                       current.get(expired) && expired;
+      rows.push_back(DeviceDiagnosticRow{reading.label, value, bad});
     }
   }
   for (const Reading& reading : readings_) {

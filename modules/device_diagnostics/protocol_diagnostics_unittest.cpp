@@ -128,3 +128,13 @@ TEST(ProtocolDiagnosticsTest, UnknownLinkStateIsNamedNotGuessed) {
 }
 
 }  // namespace
+
+// UX audit 2026-11-25, item 4.2: the banner says whether the link or the
+// device failed, so it cannot read as contradicting the link-state row.
+TEST(DeviceDownDetailTest, NamesWhichSideFailed) {
+  EXPECT_EQ(DeviceDownDetail(0x0004), "link is up; the device does not answer");
+  EXPECT_EQ(DeviceDownDetail(0x0008), "link is up; the device does not answer");
+  EXPECT_EQ(DeviceDownDetail(0), "the link is down");
+  EXPECT_EQ(DeviceDownDetail(0x0002), "the link is down");
+  EXPECT_EQ(DeviceDownDetail(std::nullopt), "no response from device");
+}

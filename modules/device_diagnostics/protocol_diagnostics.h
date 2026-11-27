@@ -2,6 +2,7 @@
 
 #include "scada/node_id.h"
 
+#include <optional>
 #include <span>
 #include <string_view>
 
@@ -92,3 +93,12 @@ const ProtocolDiagnostics* ProtocolDiagnosticsFor(
 // documents the values on the node itself, which is the contract both clients
 // read. An unrecognised code is named as unknown rather than guessed at.
 std::string_view Iec60870LinkStateLabel(int state);
+
+// The banner's detail line for a device that does not answer, as an
+// untranslated key for Translate(). The banner states the DEVICE's state and
+// the panel's «Состояние соединения» row the shared LINK's, so «Нет связи»
+// above «Работает» read as a contradiction (UX audit 2026-11-25, item 4.2).
+// With the link's APCI state known, the detail says which one failed: the
+// link is up and the device does not answer, or the link itself is down.
+// Without it, the device-only wording.
+std::string_view DeviceDownDetail(std::optional<int> link_state);

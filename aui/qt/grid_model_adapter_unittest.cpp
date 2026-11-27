@@ -1,4 +1,5 @@
 #include "aui/qt/grid_model_adapter.h"
+#include "aui/qt/header_width.h"
 
 #include "aui/models/grid_model.h"
 #include "aui/models/grid_range.h"
@@ -435,6 +436,20 @@ TEST_F(GridModelAdapterTest, SatisfiesTheQtModelContractThroughRowMutations) {
   model_->RemoveRows(1, 1);
   model_->ChangeRange(GridRange::Rows(0, 1));
   model_->ChangeWholesale();
+}
+
+// UX audit 2026-11-25, item 4.3: a section is never sized below its own
+// title, and the title is the tooltip, so a narrowed column can still be read.
+TEST_F(GridModelAdapterTest, AHeaderIsNeverNarrowerThanItsTitle) {
+  TableColumn column{0, u"Device (backup input) and channel", 20};
+  columns_->SetColumns(1, &column);
+
+  const QString title = QStringLiteral("Device (backup input) and channel");
+  EXPECT_GE(
+      adapter_.headerData(0, Qt::Horizontal, Qt::SizeHintRole).toSize().width(),
+      HeaderTitleWidth(title));
+  EXPECT_EQ(adapter_.headerData(0, Qt::Horizontal, Qt::ToolTipRole).toString(),
+            title);
 }
 
 }  // namespace

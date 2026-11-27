@@ -178,6 +178,8 @@ QVariant TableModelAdapter::headerData(int section,
 
   switch (role) {
     case Qt::DisplayRole:
+    // The full title for a section the user has narrowed below it.
+    case Qt::ToolTipRole:
       return QString::fromStdU16String(column.title);
     default:
       return QVariant();
