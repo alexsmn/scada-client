@@ -144,6 +144,12 @@ EventView::EventView(const ControllerContext& context,
        .width = 170,
        .alignment = scada::aui::TableColumn::LEFT,
        .path_separator = u" : "},
+      // What happened, beside the signal it happened to: it was after
+      // Severity, State and Value, so on an ordinary window it sat behind the
+      // horizontal scrollbar while the columns before it repeated what the
+      // row colour already said (UX audit 2026-11-25, item 1.2).
+      {EventColumnMessage, Translate("Message"), 300,
+       scada::aui::TableColumn::LEFT},
       // Wide enough for the named alarm band, which spells the severity out
       // instead of leaving colour as its only signal.
       {EventColumnSeverity, Translate("Severity"), 165,
@@ -156,8 +162,6 @@ EventView::EventView(const ControllerContext& context,
        scada::aui::TableColumn::RIGHT,
        scada::aui::TableColumn::DataType::General,
        /*monospace=*/true},
-      {EventColumnMessage, Translate("Message"), 300,
-       scada::aui::TableColumn::LEFT},
       {EventColumnUser, Translate("User"), 100, scada::aui::TableColumn::LEFT},
       {EventColumnAckUser, Translate("Acknowledged By"), 100,
        scada::aui::TableColumn::LEFT},

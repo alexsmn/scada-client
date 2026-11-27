@@ -52,7 +52,9 @@ AlarmState AlarmStateFor(const scada::Event& event);
 // it stands, a plain event until it is acknowledged.
 bool IsAlarmActive(const scada::Event& event);
 
-// The translated label for `state`, e.g. "Active, unacknowledged".
+// The translated label for `state`, e.g. "Active, unacknowledged". A plain
+// event's label names its acknowledgement too ("Event, unacknowledged"), so
+// the label distinguishes every state.
 std::u16string AlarmStateLabel(AlarmState state);
 
 }  // namespace events

@@ -161,6 +161,14 @@ void TableRow::GetQualityCell(TableCellEx& cell) const {
   // Value cell beside it is empty for the same reason. The label is never the
   // colour alone (principle §5), and it is the same word the Inspector's pill
   // shows for the same value.
+  //
+  // Good quality is the normal case and is left unmarked: a column of green
+  // «Достоверно» drew the eye to every healthy row, while the one row with no
+  // data was the plainest on the screen (UX audit 2026-11-25, item 2.1;
+  // principles.md §1). Only an exception is written, so it is the one cell
+  // with text in the column.
+  if (quality == scada::aui::Quality::kGood)
+    return;
   cell.text = DataQualityLabel(quality);
   if (quality)
     cell.text_color = scada::aui::QualityColor(*quality);

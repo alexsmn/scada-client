@@ -37,57 +37,72 @@ namespace {
 // a bare u"" literal it rendered English in a Russian journal.
 
 void GetEventColors(const scada::Event& event,
-                    bool live,
+                    bool pending,
                     scada::aui::Color& text_color,
                     scada::aui::Color& back_color) {
   // The colours themselves come from the single severity source, so they follow
   // the active theme and stay in step with every other severity surface.
   //
-  // Severity owns the row colour; acknowledgement is carried by the leading dot
-  // column, the "— pending —" acknowledge-time cell and the alarm footer.
-  // Classifying unacknowledged first — as the journal did before it had those
-  // three — painted every pending row green, including a pending *critical*
-  // alarm, which reads as "normal" and spends saturated colour on something
-  // that is not a severity: both against principles.md §1 ("reserve bright
-  // colour exclusively for abnormal conditions") and §5, which describes the
-  // intended design as "a red alarm row also carries a severity label and an
-  // unacknowledged dot".
+  // Severity decides *which* colour; whether the row still demands an operator
+  // decides *how loud* it is. The saturated fill is spent only on a row that is
+  // pending and still standing: an unacknowledged active Condition, or a plain
+  // event nobody has read. Everything else that carries a severity — an
+  // acknowledged alarm still standing, an acknowledged plain event, a journal
+  // record — keeps the severity as text on the base surface: still readable as
+  // "how bad", no longer shouting. A Condition that returned to normal is drawn
+  // plain; its state cell says what is left to do (ISA-18.2, backlog 1117).
   //
-  // On a live row the fill is spent only on an alarm that demands attention:
-  // unacknowledged and still standing (or a plain event nobody has read). An
-  // acknowledged alarm still standing keeps its severity as text colour — still
-  // wrong, no longer shouting — and one that cleared unread is drawn plain,
-  // its pending dot and «Returned to normal, unacknowledged» state cell saying
-  // what is left to do (ISA-18.2's three states, backlog 1117). A journal
-  // record keeps its severity fill: it records what was raised.
+  // Journal records used to keep their fill "because they record what was
+  // raised", and an acknowledged plain event kept it too, so a day's journal of
+  // handled history drowned the one live row and an acknowledged alarm looked
+  // like a live one but for a small dot (UX audit 2026-11-25, items 1.1 and
+  // 1.9; principles.md §1 reserves saturated colour for what needs attention).
+  //
+  // A pending critical alarm keeps its *severity* colour, never an
+  // "unacknowledged" colour: classifying unacknowledged first once painted it
+  // green, which reads as "normal" (principles.md §5).
   const std::optional<scada::aui::EventBackground> background =
       events::EventBackgroundForSeverity(event.severity);
   if (!background)
     return;
 
-  if (live) {
-    switch (events::AlarmStateFor(event)) {
-      case events::AlarmState::kAckedActive:
-        // Severity as text on the base surface, so the text form (1144).
-        if (const auto color = scada::aui::SeverityTextColor(
-                events::SeverityLevelForEvent(event.severity))) {
-          text_color = *color;
-        }
+  switch (events::AlarmStateFor(event)) {
+    case events::AlarmState::kUnackedReturned:
+    case events::AlarmState::kReturned:
+      return;
+    case events::AlarmState::kUnackedActive:
+    case events::AlarmState::kUnackedEvent:
+      if (pending) {
+        const scada::aui::EventRowColors colors =
+            scada::aui::EventRowColorsFor(*background);
+        back_color = colors.background;
+        text_color = colors.text;
         return;
-      case events::AlarmState::kUnackedReturned:
-      case events::AlarmState::kReturned:
-        return;
-      case events::AlarmState::kUnackedActive:
-      case events::AlarmState::kUnackedEvent:
-      case events::AlarmState::kAckedEvent:
-        break;
-    }
+      }
+      break;
+    case events::AlarmState::kAckedActive:
+    case events::AlarmState::kAckedEvent:
+      break;
   }
 
-  const scada::aui::EventRowColors colors =
-      scada::aui::EventRowColorsFor(*background);
-  back_color = colors.background;
-  text_color = colors.text;
+  // Severity as text on the base surface, so the text form (1144).
+  if (const auto color = scada::aui::SeverityTextColor(
+          events::SeverityLevelForEvent(event.severity))) {
+    text_color = *color;
+  }
+}
+
+// The State cell. A plain event has no process state, so its cell says
+// whether it still awaits an operator -- a column that read «Событие» on every
+// row said nothing (UX audit 2026-11-25, item 1.2). A history record of a plain
+// event nobody acknowledged is not pending here (see IsPending): it is labelled
+// a plain «Событие», never «не квитировано», which would ask for an action the
+// journal cannot take on history.
+std::u16string StateText(const scada::Event& event, bool pending) {
+  const events::AlarmState state = events::AlarmStateFor(event);
+  if (state == events::AlarmState::kUnackedEvent && !pending)
+    return Translate("Event");
+  return events::AlarmStateLabel(state);
 }
 
 template <class T>
@@ -301,8 +316,8 @@ void EventTableModel::GetEventCell(const Row& row,
   // security result, which the Result column marks, not a process alarm
   // (backlog 1127).
   if (!audit_only_) {
-    GetEventColors(event, /*live=*/row.type != HISTORICAL_EVENT,
-                   cell.text_color, cell.cell_color);
+    GetEventColors(event, IsPending(row.type, event), cell.text_color,
+                   cell.cell_color);
   }
 
   switch (cell.column_id) {
@@ -386,7 +401,7 @@ void EventTableModel::GetEventCell(const Row& row,
         cell.text = u"●";
       break;
     case EventColumnState:
-      cell.text = events::AlarmStateLabel(events::AlarmStateFor(event));
+      cell.text = StateText(event, IsPending(row.type, event));
       break;
     case EventColumnAuditAction:
       cell.text = events::DescribeAuditEvent(event, event.message.text).action;

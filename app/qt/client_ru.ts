@@ -1192,6 +1192,14 @@
         <translation>В норме</translation>
     </message>
     <message>
+        <source>Event, unacknowledged</source>
+        <translation>Событие, не квитировано</translation>
+    </message>
+    <message>
+        <source>Event, acknowledged</source>
+        <translation>Событие, квитировано</translation>
+    </message>
+    <message>
         <source>No event shown here is waiting to be acknowledged</source>
         <translation>Среди показанных событий нет неквитированных</translation>
     </message>

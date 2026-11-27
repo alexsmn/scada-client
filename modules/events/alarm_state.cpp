@@ -38,8 +38,9 @@ std::u16string AlarmStateLabel(AlarmState state) {
     case AlarmState::kReturned:
       return Translate("Returned to normal");
     case AlarmState::kUnackedEvent:
+      return Translate("Event, unacknowledged");
     case AlarmState::kAckedEvent:
-      return Translate("Event");
+      return Translate("Event, acknowledged");
   }
   return {};
 }

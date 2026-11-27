@@ -855,7 +855,10 @@ void InspectorPanel::ShowElement(const InspectorElementView& element) {
   if (element.quality) {
     switch (*element.quality) {
       case scada::aui::Quality::kGood:
-        pill = tokens.good;
+        // Good is the normal case: worded, but not coloured. A green pill was
+        // the most saturated thing in the value card and competed with the
+        // limit-breach badge beside it (UX audit 2026-11-25, item 2.2;
+        // principles.md §1).
         break;
       case scada::aui::Quality::kUncertain:
         pill = tokens.uncertain;

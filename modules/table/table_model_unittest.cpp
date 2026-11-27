@@ -377,6 +377,24 @@ TEST_F(TableModelTest, QualityColumnNamesTheSharedBand) {
             scada::aui::QualityColor(scada::aui::Quality::kBad));
 }
 
+// UX audit 2026-11-25, item 2.1: good quality is left blank and uncoloured, so
+// the Quality column carries text only where something is wrong — a column of
+// green «Достоверно» drew the eye to every healthy row instead.
+TEST_F(TableModelTest, GoodQualityIsUnmarked) {
+  const auto& row_context = SetFormula();
+
+  scada::DataValue current{42.0, scada::Qualifier{}, scada::kNullTime,
+                           scada::kNullTime};
+  EXPECT_CALL(row_context->timed_data, GetNode()).Times(AnyNumber());
+  EXPECT_CALL(row_context->timed_data, GetDataValue())
+      .Times(AnyNumber())
+      .WillRepeatedly([&] { return current; });
+
+  EXPECT_EQ(table_model_.GetCellText(0, TableModel::COLUMN_QUALITY), u"");
+  EXPECT_NE(GetTextColor(table_model_, 0, TableModel::COLUMN_QUALITY),
+            scada::aui::QualityColor(scada::aui::Quality::kGood));
+}
+
 // The complement: a real timestamp still renders.
 TEST_F(TableModelTest, DeliveredTimestampsRender) {
   const auto& row_context = SetFormula();

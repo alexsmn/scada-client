@@ -67,10 +67,12 @@ TEST_F(VisibleNodeModelTest, UnresolvedProxyNodeShowsNoStatusDot) {
   auto underlying_node = std::make_shared<NiceMock<TestVisibleNode>>();
   ON_CALL(*underlying_node, IsBad()).WillByDefault(Return(false));
   ON_CALL(*underlying_node, IsAlerting()).WillByDefault(Return(false));
+  underlying_node->quality = scada::aui::Quality::kUncertain;
   proxy_node->SetUnderlyingNode(underlying_node);
 
-  // Once it speaks for a real value, the good band is honest again.
-  EXPECT_TRUE(model_.GetStatusIndicator(tree_node).has_value());
+  // Once it speaks for a real value, its quality band is honest again.
+  EXPECT_EQ(model_.GetStatusIndicator(tree_node)->quality,
+            scada::aui::Quality::kUncertain);
 
   proxy_node->SetChangeHandler(nullptr);
 }
@@ -107,9 +109,22 @@ TEST_F(VisibleNodeModelTest, AlarmDoesNotColourTheQualityDot) {
   ON_CALL(*node, IsAlerting()).WillByDefault(Return(true));
   model_.SetNode(tree_node, node);
 
-  EXPECT_EQ(model_.GetStatusIndicator(tree_node)->quality,
-            scada::aui::Quality::kGood);
+  // Good data in alarm: no quality dot at all (good is unmarked), and the
+  // alarm keeps its own cue.
+  EXPECT_FALSE(model_.GetStatusIndicator(tree_node).has_value());
   EXPECT_EQ(model_.GetBackgroundColor(tree_node), profile_.alarm_color);
+}
+
+// UX audit 2026-11-25, item 2.2: good quality is the normal case and draws no
+// dot, so the dots that remain are the exceptions (principles.md §1).
+TEST_F(VisibleNodeModelTest, GoodQualityDrawsNoDot) {
+  int value = 0;
+  void* tree_node = &value;
+  auto node = std::make_shared<NiceMock<TestVisibleNode>>();
+  model_.SetNode(tree_node, node);
+
+  node->quality = scada::aui::Quality::kGood;
+  EXPECT_FALSE(model_.GetStatusIndicator(tree_node).has_value());
 }
 
 // The dot follows the shared band: uncertain (stale) is amber, bad is red.
@@ -141,8 +156,7 @@ TEST_F(VisibleNodeModelTest, StatusBadgeNamesItsBand) {
   model_.SetNode(tree_node, node);
 
   for (scada::aui::Quality quality :
-       {scada::aui::Quality::kGood, scada::aui::Quality::kUncertain,
-        scada::aui::Quality::kBad}) {
+       {scada::aui::Quality::kUncertain, scada::aui::Quality::kBad}) {
     node->quality = quality;
     const auto status = model_.GetStatusIndicator(tree_node);
     ASSERT_TRUE(status.has_value());

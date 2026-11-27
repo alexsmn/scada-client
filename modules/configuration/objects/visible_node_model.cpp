@@ -89,8 +89,12 @@ std::optional<scada::aui::StatusIndicator> VisibleNodeModel::GetStatusIndicator(
   // nothing to vouch for. Alarm state is deliberately absent -- the dot used to
   // turn amber for an alerting node, which read as doubtful data (backlog
   // 1120); the alarm blinks the Value cell's background instead.
+  //
+  // Good quality draws no dot: a green dot on every healthy signal decorated
+  // the normal state and competed with the exceptions (UX audit 2026-11-25,
+  // item 2.2; principles.md §1). Uncertain and bad keep theirs.
   const std::optional<scada::aui::Quality> quality = node->GetQuality();
-  if (!quality)
+  if (!quality || *quality == scada::aui::Quality::kGood)
     return std::nullopt;
   return scada::aui::StatusIndicator{.quality = *quality,
                                      .label = DataQualityLabel(*quality)};

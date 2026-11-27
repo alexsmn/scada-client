@@ -240,6 +240,60 @@ TEST(EventTableModelUnacknowledgedFilterTest,
   EXPECT_EQ(model.GetRowCount(), 3);
 }
 
+// UX audit 2026-11-25, item 1.9: a journal history record is never pending
+// here, so it keeps its severity as text and loses the saturated fill. Records
+// used to keep it "because they record what was raised", and a day of handled
+// history drowned the one live row.
+TEST(EventTableModelHistoryColourTest, HistoryRecordKeepsSeverityAsText) {
+  TestExecutor executor;
+
+  StaticNodeService node_service;
+  const scada::NodeId node_id{1, scada::NamespaceIndexes::TIT};
+  node_service.Add(
+      {.node_id = node_id,
+       .type_definition_id = scada::data_items::id::AnalogItemType,
+       .attributes = {.browse_name = "n1", .display_name = u"N1"}});
+
+  NiceMock<MockNodeEventProvider> node_event_provider;
+  NodeEventProvider::EventContainer empty_current;
+  ON_CALL(node_event_provider, current_events())
+      .WillByDefault(ReturnRef(empty_current));
+  CurrentEventModel current_event_model{node_event_provider};
+
+  NiceMock<scada::MockHistoryService> history_service;
+  HistoricalEventModel historical_event_model{executor, history_service};
+  LocalEvents local_events;
+  LocalEventModel local_event_model{local_events};
+
+  EventTableModel model{{.executor_ = executor,
+                         .node_service_ = node_service,
+                         .current_event_model_ = current_event_model,
+                         .historical_event_model_ = historical_event_model,
+                         .local_event_model_ = local_event_model,
+                         .current_events_ = false}};
+
+  historical_event_model.AddEvent({.event_id = 1,
+                                   .severity = scada::kSeverityCritical,
+                                   .source_node_id = node_id});
+  historical_event_model.refilter_now();
+  ASSERT_EQ(model.GetRowCount(), 1);
+  ASSERT_EQ(model.event_type_at(0), EventTableModel::HISTORICAL_EVENT);
+
+  scada::aui::TableCell cell{.row = 0, .column_id = EventColumnMessage};
+  model.GetCell(cell);
+  EXPECT_NE(cell.cell_color, scada::aui::EventRowColorsFor(
+                                 scada::aui::EventBackground::kCritical)
+                                 .background);
+  EXPECT_EQ(cell.text_color, *scada::aui::SeverityTextColor(
+                                 scada::aui::SeverityLevel::kCritical));
+
+  // Not pending here, so not «не квитировано» either: the journal cannot
+  // acknowledge history.
+  scada::aui::TableCell state{.row = 0, .column_id = EventColumnState};
+  model.GetCell(state);
+  EXPECT_EQ(state.text, Translate("Event"));
+}
+
 // Task 155: the journal's "[Loading]" title marker is pushed, not polled, so
 // the model must announce both edges of a historical read.
 TEST(EventTableModelWorkingTest, ReportsTheHistoricalReadStartingAndEnding) {
@@ -555,14 +609,38 @@ TEST_F(EventJournalAlarmSurfaceTest, PendingCriticalKeepsItsSeverityColour) {
             BackgroundFor(scada::aui::EventBackground::kWarning));
 }
 
-// Acknowledging does not change the severity, so it does not change the colour.
-TEST_F(EventJournalAlarmSurfaceTest, AcknowledgedCriticalKeepsTheSameColour) {
+// Acknowledging changes how loud a row is, not its severity: an acknowledged
+// critical event loses the fill — it no longer demands anybody — and keeps the
+// critical colour as text, so it still reads as critical. It used to keep the
+// fill, so an acknowledged alarm differed from a live one only by a small dot
+// (UX audit 2026-11-25, item 1.1).
+TEST_F(EventJournalAlarmSurfaceTest, AcknowledgedCriticalKeepsItsColourAsText) {
   FirstEvent().severity = scada::kSeverityCritical;
   FirstEvent().acked = true;
   Init();
 
-  EXPECT_EQ(CellBackground(),
+  EXPECT_NE(CellBackground(),
             BackgroundFor(scada::aui::EventBackground::kCritical));
+  scada::aui::TableCell cell{.row = 0, .column_id = EventColumnMessage};
+  event_table_model_->GetCell(cell);
+  EXPECT_EQ(cell.text_color, *scada::aui::SeverityTextColor(
+                                 scada::aui::SeverityLevel::kCritical));
+  EXPECT_EQ(CellText(EventColumnState),
+            events::AlarmStateLabel(events::AlarmState::kAckedEvent));
+}
+
+// A plain event's State cell says whether it still awaits an operator: the
+// column read «Событие» on every row, which said nothing (UX audit 2026-11-25,
+// item 1.2).
+TEST_F(EventJournalAlarmSurfaceTest, PlainEventStateNamesItsAcknowledgement) {
+  FirstEvent().severity = scada::kSeverityCritical;
+  FirstEvent().acked = false;
+  Init();
+
+  EXPECT_EQ(CellText(EventColumnState),
+            events::AlarmStateLabel(events::AlarmState::kUnackedEvent));
+  EXPECT_NE(events::AlarmStateLabel(events::AlarmState::kUnackedEvent),
+            events::AlarmStateLabel(events::AlarmState::kAckedEvent));
 }
 
 // A routine event is not an alarm, so the journal leaves it uncoloured even
