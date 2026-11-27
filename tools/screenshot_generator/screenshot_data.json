@@ -24,11 +24,15 @@
     "Accounts offered by the login dialog's user combo. The capture seeds these",
     "into a hermetic settings store instead of reading the real per-user list,",
     "so client-login.png never leaks the capturing machine's accounts. The first",
-    "entry is also the pre-selected user."
+    "entry is also the pre-selected user. It is the dispatcher, not the",
+    "administrator: the dialog pre-selects whoever signed in last on this",
+    "workstation, and on an operator station that is an operator. With the",
+    "administrator first, the manual taught the opposite (UX audit 2026-11-25,",
+    "item 3.6)."
   ],
   "login_user_list": [
-    "Администратор",
     "Диспетчер 1",
+    "Администратор",
     "Инженер АСУ",
     "Диспетчер",
     "Руководитель",

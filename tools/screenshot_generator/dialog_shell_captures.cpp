@@ -25,6 +25,7 @@
 #include "main_window/context_bar_qt.h"
 #include "modules/about/about_dialog.h"
 #include "modules/about/about_info.h"
+#include "modules/export/configuration/configuration_transfer_commands.h"
 #include "modules/export/csv/csv_export.h"
 #include "modules/favorites/add_favourites_dialog.h"
 #include "modules/login/login_dialog.h"
@@ -237,14 +238,25 @@ bool CaptureTimeRangeDialog(const DialogCaptureContext& context) {
 }
 
 bool CaptureMessageBoxDialog(const DialogCaptureContext& context) {
-  // The shared confirmation surface (DialogService::RunMessageBox), in its
-  // question variant — the shape the two-stage confirms and apply/discard
-  // prompts use. Mirrors the Excel-import "Apply changes?" call.
-  auto lifetime =
-      StartAwaitable(context.env.executor,
-                     context.dialog_service.RunMessageBox(
-                         Translate("Apply changes?"), Translate("Import"),
-                         MessageBoxMode::QuestionYesNo));
+  // The shared confirmation surface (DialogService::RunMessageBox), as the
+  // configuration import asks it: the dry run's report, then the question,
+  // answered Apply or Cancel with Cancel the default. It used to render a bare
+  // «Применить изменения?» over Да/Нет with Да the default, a prompt the
+  // product never showed (UX audit 2026-11-25, item 3.7).
+  scada::ImportResultSummary summary;
+  summary.added.resize(12);
+  summary.modified.resize(3);
+  summary.deleted.resize(1);
+  summary.references_added = 14;
+  std::u16string message = ImportCheckReport(
+      ConfigurationTransferClient::ImportOutcome{.result = summary},
+      u"config.xml");
+  message += u"\n\n";
+  message += Translate("Apply changes?");
+  auto lifetime = StartAwaitable(
+      context.env.executor,
+      context.dialog_service.RunMessageBox(
+          message, Translate("Import"), MessageBoxMode::QuestionApplyCancel));
   return GrabThenAwait(context, lifetime);
 }
 

@@ -256,14 +256,14 @@ TEST_F(ExportConfigurationModuleTest, ExportSavesWhatTheServerGenerated) {
 }
 
 // ADR 0014: a dry run first, the operator shown what it would change, and
-// only on their Yes the same file for real.
+// only on their Apply the same file for real.
 TEST_F(ExportConfigurationModuleTest, ImportChecksThenApplies) {
   const auto file = WriteFile("config.xml", "<UANodeSet/>");
   EXPECT_CALL(dialog_service_, SelectOpenFile(_))
       .WillOnce([file](std::u16string_view) { return ReturnPath(file); });
   server_.commits = {{.result = Result({8}, {7}, /*dry_run=*/true)},
                      {.result = Result({8}, {7}, /*dry_run=*/false)}};
-  ExpectMessages({MessageBoxResult::Yes, MessageBoxResult::Ok});
+  ExpectMessages({MessageBoxResult::Apply, MessageBoxResult::Ok});
 
   Run(ImportConfiguration(client_, dialog_service_));
 
@@ -272,7 +272,7 @@ TEST_F(ExportConfigurationModuleTest, ImportChecksThenApplies) {
   EXPECT_EQ(server_.received[0].options, Flags({"dryRun"}));
   EXPECT_TRUE(server_.received[1].options.is_null());
   EXPECT_THAT(messages_[0], HasSubstr16(u"config.xml: 1 to add, 1 to change"));
-  EXPECT_EQ(modes_[0], MessageBoxMode::QuestionYesNoDefaultNo);
+  EXPECT_EQ(modes_[0], MessageBoxMode::QuestionApplyCancel);
   EXPECT_EQ(messages_[1], u"Imported: 1 added, 1 changed, 0 deleted.");
 }
 
@@ -281,7 +281,7 @@ TEST_F(ExportConfigurationModuleTest, DecliningTheCheckAppliesNothing) {
   EXPECT_CALL(dialog_service_, SelectOpenFile(_))
       .WillOnce([file](std::u16string_view) { return ReturnPath(file); });
   server_.commits = {{.result = Result({8}, {}, /*dry_run=*/true)}};
-  ExpectMessages({MessageBoxResult::No});
+  ExpectMessages({MessageBoxResult::Cancel});
 
   Run(ImportConfiguration(client_, dialog_service_));
 

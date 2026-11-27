@@ -107,6 +107,16 @@ Awaitable<MessageBoxResult> DialogServiceImplQt::RunMessageBox(
       message_box->setEscapeButton(QMessageBox::Cancel);
       break;
 
+    case MessageBoxMode::QuestionApplyCancel:
+      message_box->setIcon(QMessageBox::Question);
+      message_box->setStandardButtons(QMessageBox::Apply | QMessageBox::Cancel);
+      // Named here, as above: qtbase's Russian for Apply varies by platform.
+      message_box->button(QMessageBox::Apply)
+          ->setText(QString::fromStdU16String(Translate("Apply")));
+      message_box->setDefaultButton(QMessageBox::Cancel);
+      message_box->setEscapeButton(QMessageBox::Cancel);
+      break;
+
     default:
       scada::base::NotReached();
   }

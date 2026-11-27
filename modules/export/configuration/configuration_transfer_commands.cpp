@@ -210,11 +210,13 @@ Awaitable<void> ImportConfiguration(const ConfigurationTransferClient& client,
     co_return;
   }
 
+  // «Применить» / «Отмена» rather than «Да» / «Нет»: the answer names what
+  // it does, and Cancel stays the default (UX audit 2026-11-25, item 3.7).
   auto apply = co_await dialog_service.RunMessageBox(
       WithQuestion(ImportCheckReport(check, file_name),
                    Translate("Apply changes?")),
-      title, MessageBoxMode::QuestionYesNoDefaultNo);
-  if (apply != MessageBoxResult::Yes) {
+      title, MessageBoxMode::QuestionApplyCancel);
+  if (apply != MessageBoxResult::Apply) {
     co_return;
   }
 
