@@ -79,8 +79,9 @@ TEST(AuditEntry, EveryAuditedMethodIsNamed) {
        {u"AddUser", u"ModifyUser", u"RemoveUser", u"ChangePassword",
         u"VerifyPassword", u"AddRole", u"RemoveRole", u"AddIdentity",
         u"RemoveIdentity"}) {
-    EXPECT_NE(DescribeAuditEvent(MethodAudit(), method).action, method)
-        << std::string(method.begin(), method.end());
+    // gtest prints both u16 strings; a char message would narrow char16_t,
+    // which MSVC rejects (C4244 as an error).
+    EXPECT_NE(DescribeAuditEvent(MethodAudit(), method).action, method);
   }
 }
 
