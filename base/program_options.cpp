@@ -60,6 +60,9 @@ void InitProgramOptions(int argc, char* argv[]) {
       "E2E-only profile save report file")(
       "test-profile-save-user-id", po::value<std::string>(),
       "E2E-only profile save target user node ID")(
+      "test-display-menu-file", po::value<std::string>(),
+      "E2E-only Display menu report file: lists the menu's rows, opens the "
+      "first and reports the readings its schematic is given")(
       "test-data-dir", po::value<std::string>(),
       "E2E-only client data directory. Overrides the per-user profile and "
       "file-cache location so a run cannot read or write the developer's own "

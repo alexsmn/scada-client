@@ -12,6 +12,7 @@
 
 #include <filesystem>
 #include <functional>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -121,6 +122,13 @@ class DisplayWidget : public QWidget {
   // quality. Repaints.
   void ShowReading(const DisplayDataSourceReading& reading);
 
+  // The latest reading `ShowReading` handed the open document for
+  // `data_source`, or nullopt when none has. The runtime draws a reading but
+  // cannot report one back, so this is how a check outside the widget (the
+  // client's E2E display-menu hook) learns what the schematic was given.
+  std::optional<DisplayDataSourceReading> LastReading(
+      std::string_view data_source) const;
+
   // Frames the elements bound to `data_source` in the theme's
   // critical-severity colour while `marked`, for an unacknowledged alarm; the
   // host toggles it with its blinker. Repaints.
@@ -158,6 +166,10 @@ class DisplayWidget : public QWidget {
   QImage frame_;
 
   std::optional<DisplayShapeHit> selection_;
+
+  // What `ShowReading` last handed `document_`, per data source; cleared when
+  // a document opens.
+  std::map<std::string, DisplayDataSourceReading, std::less<>> readings_;
 
   SelectionCallback selection_callback_;
   DoubleClickCallback double_click_callback_;

@@ -104,6 +104,7 @@ bool DisplayWidget::Open(const std::filesystem::path& path,
   title_.clear();
   error_message_.clear();
   document_.reset();
+  readings_.clear();
   // A selection is a position in the OLD document and means nothing in the
   // new one, so it goes before the load rather than being left to paint over
   // whatever lands at those coordinates.
@@ -174,7 +175,15 @@ void DisplayWidget::ShowReading(const DisplayDataSourceReading& reading) {
     return;
   document_->SetDataSourceValue(reading.data_source, reading.value,
                                 reading.text, reading.quality);
+  readings_.insert_or_assign(reading.data_source, reading);
   update();
+}
+
+std::optional<DisplayDataSourceReading> DisplayWidget::LastReading(
+    std::string_view data_source) const {
+  if (auto i = readings_.find(data_source); i != readings_.end())
+    return i->second;
+  return std::nullopt;
 }
 
 void DisplayWidget::SetAlarmMarked(std::string_view data_source, bool marked) {

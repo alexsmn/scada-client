@@ -47,6 +47,8 @@ target_link_libraries(client_qt_app_shared PUBLIC
   client_controller_qt
   # The right dock's specialist panels, registered by ClientApplication.
   client_device_diagnostics_qt
+  # DisplayWidget, which the E2E Display menu check reads its readings from.
+  client_display_view_qt
   client_events_qt
   client_export_configuration_qt
   client_export_excel_qt

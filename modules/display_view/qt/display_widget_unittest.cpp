@@ -1,11 +1,16 @@
 #include "display_view/qt/display_widget.h"
 
+#include "aui/test/app_environment.h"
+
 #include <gtest/gtest.h>
 
 #include <QRectF>
 #include <QSize>
 
+#include <filesystem>
 #include <limits>
+#include <string>
+#include <vector>
 
 namespace {
 
@@ -55,8 +60,8 @@ TEST(DisplayPageRectToWidgetTest, NormalisesANegativeHeight) {
 // widget is unsized before its first layout, and a document with no usable
 // page metrics is a real case the facade tolerates.
 TEST(DisplayPageRectToWidgetTest, DegenerateInputsAreEmpty) {
-  EXPECT_TRUE(
-      DisplayPageRectToWidget(kPage, DisplayRect{0, 0, 0, 0}, kWidget).isEmpty());
+  EXPECT_TRUE(DisplayPageRectToWidget(kPage, DisplayRect{0, 0, 0, 0}, kWidget)
+                  .isEmpty());
   EXPECT_TRUE(DisplayPageRectToWidget(kPage, kPage, QSize{0, 0}).isEmpty());
   EXPECT_TRUE(DisplayPageRectToWidget(kPage, kPage, QSize{400, 0}).isEmpty());
 }
@@ -64,9 +69,11 @@ TEST(DisplayPageRectToWidgetTest, DegenerateInputsAreEmpty) {
 TEST(DisplayPageRectToWidgetTest, NonFiniteInputsAreEmpty) {
   const double nan = std::numeric_limits<double>::quiet_NaN();
   EXPECT_TRUE(
-      DisplayPageRectToWidget(DisplayRect{nan, 0, 10, 10}, kPage, kWidget).isEmpty());
+      DisplayPageRectToWidget(DisplayRect{nan, 0, 10, 10}, kPage, kWidget)
+          .isEmpty());
   EXPECT_TRUE(
-      DisplayPageRectToWidget(kPage, DisplayRect{0, 0, nan, 100}, kWidget).isEmpty());
+      DisplayPageRectToWidget(kPage, DisplayRect{0, 0, nan, 100}, kWidget)
+          .isEmpty());
 }
 
 TEST(DisplayShapeLabelTest, PrefersTheAuthoredName) {
@@ -91,6 +98,50 @@ TEST(DisplayShapeLabelTest, IsEmptyWhenTheShapeHasNeither) {
   hit.id = 42;
 
   EXPECT_TRUE(DisplayShapeLabel(hit).isEmpty());
+}
+
+// What the schematic was last given, read back. The runtime draws a reading
+// but cannot report one, and the client's E2E Display menu check is how a run
+// learns what an opened schematic shows; this pins that readback against the
+// real runtime, when the configure named one (display_runtime_unittest.cpp
+// points the loader at it before the first test).
+TEST(DisplayWidgetReadingTest, RemembersTheLastReadingPerDataSource) {
+#ifdef SCADA_DISPLAY_TEST_DOCUMENT
+  const std::filesystem::path document{SCADA_DISPLAY_TEST_DOCUMENT};
+#else
+  const std::filesystem::path document;
+#endif
+  if (!DisplayRuntime::Get() || document.empty() ||
+      !std::filesystem::exists(document)) {
+    GTEST_SKIP() << "no display runtime or fixture document in this build";
+  }
+
+  AppEnvironment app_env;
+  DisplayWidget widget;
+  ASSERT_TRUE(widget.Open(document, DisplayDocumentKind::kAuto))
+      << widget.error_message().toStdString();
+  const std::vector<std::string> data_sources = widget.DataSources();
+  ASSERT_FALSE(data_sources.empty());
+  const std::string& bound = data_sources.front();
+
+  EXPECT_FALSE(widget.LastReading(bound));
+
+  widget.ShowReading({.data_source = bound, .value = 1.0, .text = "1"});
+  widget.ShowReading(
+      {.data_source = bound, .value = 73.25, .text = "73.25", .quality = 0});
+  const std::optional<DisplayDataSourceReading> reading =
+      widget.LastReading(bound);
+  ASSERT_TRUE(reading);
+  EXPECT_EQ(reading->text, "73.25");
+  ASSERT_TRUE(reading->value);
+  EXPECT_DOUBLE_EQ(*reading->value, 73.25);
+  EXPECT_EQ(reading->quality, 0);
+
+  EXPECT_FALSE(widget.LastReading("not bound anywhere"));
+
+  // A reading belongs to the document it was given to.
+  ASSERT_TRUE(widget.Open(document, DisplayDocumentKind::kAuto));
+  EXPECT_FALSE(widget.LastReading(bound));
 }
 
 }  // namespace

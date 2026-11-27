@@ -62,6 +62,11 @@ class QtStartupFlowTest : public testing::Test {
               order_.push_back("profile-save");
               return Resolve();
             },
+        .run_display_menu_check =
+            [this] {
+              order_.push_back("display-menu");
+              return Resolve();
+            },
         .run_application =
             [this] {
               order_.push_back("run");
@@ -93,11 +98,11 @@ TEST_F(QtStartupFlowTest, SuccessfulNormalStartupRunsChecksAndQuits) {
   WaitAwaitable(executor_, RunQtStartupFlow(std::move(context)));
   Drain(executor_);
 
-  EXPECT_THAT(order_, testing::ElementsAre("start", "success", "object-view",
-                                           "operator-smoke", "object-tree",
-                                           "hardware-tree",
-                                           "historical-timed-data",
-                                           "profile-save", "run", "quit"));
+  EXPECT_THAT(order_,
+              testing::ElementsAre(
+                  "start", "success", "object-view", "operator-smoke",
+                  "object-tree", "hardware-tree", "historical-timed-data",
+                  "profile-save", "display-menu", "run", "quit"));
   EXPECT_FALSE(logged_exception_);
 }
 
@@ -122,12 +127,11 @@ TEST_F(QtStartupFlowTest, E2eModeReportsRunCompletionInsteadOfQuitting) {
   WaitAwaitable(executor_, RunQtStartupFlow(std::move(context)));
   Drain(executor_);
 
-  EXPECT_THAT(order_, testing::ElementsAre("start", "success", "object-view",
-                                           "operator-smoke", "object-tree",
-                                           "hardware-tree",
-                                           "historical-timed-data",
-                                           "profile-save", "run",
-                                           "e2e-complete"));
+  EXPECT_THAT(order_,
+              testing::ElementsAre(
+                  "start", "success", "object-view", "operator-smoke",
+                  "object-tree", "hardware-tree", "historical-timed-data",
+                  "profile-save", "display-menu", "run", "e2e-complete"));
 }
 
 }  // namespace client

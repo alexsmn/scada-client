@@ -29,5 +29,9 @@ std::filesystem::path GetE2eHistoricalTimedDataReportPath();
 std::optional<int64_t> GetE2eHistoricalTimedDataEndTime();
 std::filesystem::path GetE2eProfileSaveReportPath();
 std::string GetE2eProfileSaveUserId();
+// Where the Display menu check reports (--test-display-menu-file): the menu's
+// rows, the view its first row opened, and the readings that view's schematic
+// was given. Empty when the check is not requested.
+std::filesystem::path GetE2eDisplayMenuReportPath();
 
 }  // namespace client

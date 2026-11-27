@@ -211,7 +211,8 @@ gtest_discover_tests(client_server_e2e_tests DISCOVERY_MODE PRE_TEST)
 #   SCADA_E2E_DESIGNER_PROBE_EXE  the Designer's designer_server_probe
 #
 # plus the proxy (SCADA_E2E_PROXY_EXE, or the in-build target) and the display
-# runtime (SCADA_DISPLAY_RUNTIME_LIBRARY). A path set but wrong is a hard
+# runtime (SCADA_DISPLAY_RUNTIME_LIBRARY). Its second case launches client_qt
+# itself against open62541, to reach the display through the Display menu. A path set but wrong is a hard
 # error; any of them absent builds the suite and SKIPs it, naming the flags.
 foreach(_var SCADA_E2E_FOREIGN_SERVER_EXE SCADA_E2E_DESIGNER_PROBE_EXE)
   set(${_var} "" CACHE FILEPATH
@@ -259,9 +260,16 @@ target_compile_definitions(client_foreign_display_e2e_tests PRIVATE
   SCADA_E2E_FOREIGN_DISPLAY_PROXY_EXE="${_scada_e2e_exe_PROXY}"
   SCADA_E2E_FOREIGN_DISPLAY_SQLITE3_EXE="${SCADA_E2E_SQLITE3_EXE}"
   SCADA_DISPLAY_RUNTIME_UNDER_TEST="${SCADA_DISPLAY_RUNTIME_LIBRARY}"
+  # The Display menu case runs the client itself.
+  SCADA_E2E_CLIENT_EXE="$<TARGET_FILE:client_qt>"
   # The display the engineer opens and binds into: the client's own
   # schematic fixture, the one the runtime's unit tests open.
   SCADA_E2E_DISPLAY_TEMPLATE="${PROJECT_SOURCE_DIR}/tools/screenshot_generator/fixtures/substation.vds"
+)
+
+add_dependencies(client_foreign_display_e2e_tests
+  client_qt
+  client_qt_copy_translations
 )
 
 gtest_discover_tests(client_foreign_display_e2e_tests DISCOVERY_MODE PRE_TEST)

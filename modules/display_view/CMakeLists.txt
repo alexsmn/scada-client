@@ -43,4 +43,6 @@ if(TARGET client_display_view_qt_unittests)
     SCADA_DISPLAY_RUNTIME_UNDER_TEST="${SCADA_DISPLAY_RUNTIME_LIBRARY}"
     SCADA_DISPLAY_TEST_DOCUMENT="${CMAKE_CURRENT_SOURCE_DIR}/../../tools/screenshot_generator/fixtures/substation.vds"
   )
+  # AppEnvironment: the QApplication a DisplayWidget needs.
+  target_link_libraries(client_display_view_qt_unittests PRIVATE aui_test_qt)
 endif()

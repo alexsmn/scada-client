@@ -15,7 +15,9 @@
 #include "configuration/objects/object_tree_view.h"
 #include "controller/command_handler.h"
 #include "controller/window_info.h"
+#include "display_view/qt/display_widget.h"
 #include "export/csv/csv_export_util.h"
+#include "main_window/main_menu/main_menu_model.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
@@ -29,6 +31,8 @@
 #include "resources/common_resources.h"
 #include "scada/status.h"
 #include "timed_data/timed_data_spec.h"
+
+#include <QList>
 
 #include <algorithm>
 #include <chrono>
@@ -695,6 +699,152 @@ Awaitable<void> RunHistoricalTimedDataCheckAsync(
     WriteEmptyReport(report_path);
 }
 
+// ── The Display menu check ───────────────────────────────────────────────────
+
+// The main window's Display submenu, found by what it is rather than by its
+// translated label or its position in the bar.
+DisplayMenuModel* FindDisplayMenuModel(MainWindow& main_window) {
+  scada::aui::MenuModel* menu_bar = main_window.main_menu_model();
+  if (!menu_bar)
+    return nullptr;
+  for (int i = 0; i < menu_bar->GetItemCount(); ++i) {
+    if (auto* display_menu =
+            dynamic_cast<DisplayMenuModel*>(menu_bar->GetSubmenuModelAt(i))) {
+      return display_menu;
+    }
+  }
+  return nullptr;
+}
+
+// The schematic widget the main window shows with a document open, or null.
+const DisplayWidget* FindOpenDisplayWidget(MainWindow& main_window) {
+  for (const DisplayWidget* widget :
+       main_window.findChildren<DisplayWidget*>()) {
+    if (!widget->path().empty() && widget->error_message().isEmpty())
+      return widget;
+  }
+  return nullptr;
+}
+
+// The first reading of `widget`'s schematic that carries a value of good
+// quality, or nullopt.
+std::optional<DisplayDataSourceReading> FindGoodReading(
+    const DisplayWidget& widget) {
+  for (const std::string& data_source : widget.DataSources()) {
+    std::optional<DisplayDataSourceReading> reading =
+        widget.LastReading(data_source);
+    if (reading && reading->value && reading->quality == 0)
+      return reading;
+  }
+  return std::nullopt;
+}
+
+// One line per fact, so the test side can match each with a plain search.
+//
+//   display-menu: ok | failure
+//   detail=<why it failed>
+//   row=<label>            one per Display menu row, in menu order
+//   opened-view=<type>     the window type the first row opened
+//   opened-path=<path>     the document the schematic widget shows
+//   data-source=<source>   one per binding the schematic names
+//   reading=<source>\t<text>\t<quality>\t<value>
+void WriteDisplayMenuReport(
+    const std::filesystem::path& path,
+    bool ok,
+    std::string_view detail,
+    const std::vector<std::u16string>& rows,
+    std::string_view opened_view,
+    const DisplayWidget* widget,
+    const std::optional<DisplayDataSourceReading>& reading) {
+  std::error_code ec;
+  if (path.has_parent_path())
+    std::filesystem::create_directories(path.parent_path(), ec);
+  std::ofstream output{path, std::ios::binary | std::ios::trunc};
+  if (!output)
+    return;
+
+  output << "display-menu: " << (ok ? "ok" : "failure") << "\n";
+  if (!detail.empty())
+    output << "detail=" << detail << "\n";
+  for (const std::u16string& row : rows)
+    output << "row=" << UtfConvert<char>(row) << "\n";
+  if (!opened_view.empty())
+    output << "opened-view=" << opened_view << "\n";
+  if (widget) {
+    output << "opened-path=" << widget->path().string() << "\n";
+    for (const std::string& data_source : widget->DataSources())
+      output << "data-source=" << data_source << "\n";
+  }
+  if (reading) {
+    output << "reading=" << reading->data_source << "\t" << reading->text
+           << "\t" << reading->quality << "\t"
+           << (reading->value ? std::to_string(*reading->value) : "") << "\n";
+  }
+}
+
+Awaitable<void> RunDisplayMenuCheckAsync(ClientApplication& app,
+                                         AnyExecutor executor,
+                                         std::filesystem::path report_path) {
+  // As long as the other checks give a slow host: the first reading waits on
+  // a session's subscription, which full-suite load delays.
+  constexpr std::chrono::milliseconds kTimeout = 60s;
+  constexpr std::chrono::milliseconds kPollInterval = 100ms;
+
+  MainWindow* main_window = GetFirstMainWindow(app);
+  DisplayMenuModel* display_menu =
+      main_window ? FindDisplayMenuModel(*main_window) : nullptr;
+  if (!display_menu) {
+    WriteDisplayMenuReport(report_path, false, "no Display menu", {}, {},
+                           nullptr, std::nullopt);
+    co_return;
+  }
+
+  // What the menu bar does when the operator opens the menu.
+  display_menu->MenuWillShow();
+  std::vector<std::u16string> rows;
+  for (int i = 0; i < display_menu->GetItemCount(); ++i)
+    rows.push_back(display_menu->GetLabelAt(i));
+  if (!display_menu->IsEnabledAt(0)) {
+    WriteDisplayMenuReport(report_path, false, "the Display menu lists no file",
+                           rows, {}, nullptr, std::nullopt);
+    co_return;
+  }
+
+  // And when they choose the first row.
+  display_menu->ActivatedAt(0);
+
+  const auto deadline = std::chrono::steady_clock::now() + kTimeout;
+  std::string opened_view;
+  const DisplayWidget* widget = nullptr;
+  std::optional<DisplayDataSourceReading> reading;
+  for (;;) {
+    // Re-found every pass: nothing here may outlive a view the client closes.
+    main_window = GetFirstMainWindow(app);
+    if (main_window) {
+      widget = FindOpenDisplayWidget(*main_window);
+      reading = widget ? FindGoodReading(*widget) : std::nullopt;
+      // The view holding that document: its definition names the file
+      // relative to the public folder, the widget by its full path.
+      for (auto* view : main_window->opened_views()) {
+        if (widget && !view->window_def().path.empty() &&
+            view->window_def().path.filename() == widget->path().filename()) {
+          opened_view = std::string{view->GetWindowInfo().name};
+        }
+      }
+    }
+    if (reading || std::chrono::steady_clock::now() >= deadline)
+      break;
+    co_await Delay(executor, kPollInterval);
+  }
+
+  std::string_view detail;
+  if (!widget)
+    detail = "no schematic opened";
+  else if (!reading)
+    detail = "the schematic was given no good reading";
+  WriteDisplayMenuReport(report_path, reading.has_value(), detail, rows,
+                         opened_view, widget, reading);
+}
 }  // namespace
 
 Awaitable<void> RunE2eObjectViewValuesCheck(ClientApplication& app,
@@ -846,6 +996,16 @@ Awaitable<void> RunE2eProfileSaveCheck(ClientApplication& app) {
   auto status = co_await app.SaveProfileToServer(std::move(target_user_id));
   WriteProfileSaveReport(report_path, scada::IsGood(status.code()), status,
                          added_page.id, added_page.title);
+}
+
+Awaitable<void> RunE2eDisplayMenuCheck(ClientApplication& app,
+                                       AnyExecutor executor) {
+  auto report_path = GetE2eDisplayMenuReportPath();
+  if (report_path.empty())
+    co_return;
+
+  co_await RunDisplayMenuCheckAsync(app, std::move(executor),
+                                    std::move(report_path));
 }
 
 }  // namespace client

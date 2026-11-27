@@ -14,13 +14,19 @@
 //   SCADA_E2E_PROXY_EXE            scada-proxy
 //   SCADA_DISPLAY_RUNTIME_LIBRARY  the display runtime the client loads
 //
-// The client half is the client's own display path, in this process rather
-// than in the client_qt GUI: the OpcUa backend's services
-// (CreateRemappingClientDataServices, as
+// Two cases. The first runs the client half in this process: the OpcUa
+// backend's services (CreateRemappingClientDataServices, as
 // client/modules/opcua_services/opcua_services_module.cpp builds them), the
 // node service and timed-data service ClientApplication builds over them, the
 // runtime-backed DisplayWidget a Vidicon display view opens, and the
 // DisplayLiveData that feeds it, wired as VidiconDisplayNativeView wires them.
+//
+// The second runs the client itself, `client_qt` (SCADA_E2E_CLIENT_EXE),
+// offscreen, signed in to open62541 through its own login: the display is
+// copied into the public folder before sign-in (decision B), and the client's
+// --test-display-menu-file hook (client/app/qt/e2e_test_support.cpp) opens the
+// main window's Display menu, chooses the file's row and reports what the
+// schematic it opened was given.
 
 #include "test/e2e/e2e_cluster.h"
 #include "test/e2e/e2e_port_reservation.h"
@@ -83,6 +89,10 @@ constexpr std::string_view kForeignNamespaceUri =
 // What the test writes, so the value the display shows can only have come
 // from this run's server.
 constexpr double kLiveValue = 73.25;
+
+// The name the display is copied into the public folder under, and so the
+// Display menu's row for it: FileCache lists a file by its stem.
+constexpr std::string_view kPublicFileStem = "Foreign plant";
 
 // What a build was configured without, as the -D flags that would supply it.
 std::string MissingPaths() {
@@ -318,6 +328,135 @@ std::string Describe(const std::optional<DisplayDataSourceReading>& reading) {
   return text.str();
 }
 
+// The whole of `path`, or empty when it cannot be read.
+std::string ReadTextFile(const std::filesystem::path& path) {
+  std::ifstream input{path, std::ios::binary};
+  std::stringstream text;
+  text << input.rdbuf();
+  return text.str();
+}
+
+// The values of every `<key>=` line of the client's Display menu report.
+std::vector<std::string> ReportValues(std::string_view report,
+                                      std::string_view key) {
+  std::vector<std::string> values;
+  const std::string prefix = std::string{key} + "=";
+  std::istringstream lines{std::string{report}};
+  for (std::string line; std::getline(lines, line);) {
+    if (line.starts_with(prefix))
+      values.push_back(line.substr(prefix.size()));
+  }
+  return values;
+}
+
+// A `reading=` line: the data source, the text, the quality, the value.
+struct ReportedReading {
+  std::string data_source;
+  std::string text;
+  int32_t quality = -1;
+  std::optional<double> value;
+};
+
+std::optional<ReportedReading> ParseReportedReading(std::string_view line) {
+  std::vector<std::string> fields;
+  std::istringstream input{std::string{line}};
+  for (std::string field; std::getline(input, field, '\t');)
+    fields.push_back(field);
+  if (fields.size() != 4)
+    return std::nullopt;
+  ReportedReading reading{.data_source = fields[0], .text = fields[1]};
+  try {
+    reading.quality = std::stoi(fields[2]);
+    if (!fields[3].empty())
+      reading.value = std::stod(fields[3]);
+  } catch (const std::exception&) {
+    return std::nullopt;
+  }
+  return reading;
+}
+
+// The client_qt process, signed in to `opcua_host` anonymously with no
+// security (all the fixture serves), its data directory -- and so its public
+// folder -- at `data_dir`.
+class GuiClient {
+ public:
+  GuiClient(const std::filesystem::path& workdir,
+            const std::filesystem::path& data_dir,
+            const std::string& opcua_host)
+      : workdir_{workdir},
+        report_file_{workdir / "display-menu.txt"},
+        status_file_{workdir / "client-status.txt"} {
+    std::filesystem::create_directories(workdir_ / "ClientProcess");
+    const boost::json::object settings{
+        {"ServerType", "OpcUa"},
+        {"Host:OpcUa", opcua_host},
+        {"User", ""},
+        {"Password", ""},
+        {"AutoLogin", true},
+        {"SecurityMode", "None"},
+        {"OpcUaPkiDirectory", (workdir_ / "ClientPki").string()},
+    };
+    std::ofstream{workdir_ / "client-settings.json"}
+        << boost::json::serialize(settings);
+
+    const std::filesystem::path exe{SCADA_E2E_CLIENT_EXE};
+    // SCADA_DISPLAY_RUNTIME, set by the fixture, is inherited.
+    LaunchProcess(
+        exe,
+        {"--test-settings-file=" + (workdir_ / "client-settings.json").string(),
+         "--test-status-file=" + status_file_.string(),
+         "--test-log-dir=" + (workdir_ / "ClientLogs").string(),
+         "--test-data-dir=" + data_dir.string(),
+         "--test-display-menu-file=" + report_file_.string()},
+        exe.parent_path(), job_, child_, {{"QT_QPA_PLATFORM", "offscreen"}},
+        workdir_ / "ClientProcess");
+  }
+
+  ~GuiClient() {
+    if (child_.IsRunning())
+      ForceTerminate(child_);
+    job_.Terminate();
+  }
+
+  GuiClient(const GuiClient&) = delete;
+  GuiClient& operator=(const GuiClient&) = delete;
+
+  // Waits for the Display menu report; empty if the client wrote none.
+  std::string WaitForReport(std::chrono::milliseconds timeout) {
+    WaitUntil(
+        [this] {
+          return std::filesystem::exists(report_file_) || !child_.IsRunning();
+        },
+        timeout);
+    return ReadTextFile(report_file_);
+  }
+
+  std::string status() const { return ReadTextFile(status_file_); }
+
+  // The last `max_chars` of everything the client logged and printed.
+  std::string LogTail(size_t max_chars) const {
+    std::string text;
+    for (const std::filesystem::path dir :
+         {workdir_ / "ClientLogs", workdir_ / "ClientProcess"}) {
+      std::error_code ec;
+      for (const auto& entry : std::filesystem::directory_iterator{dir, ec}) {
+        if (entry.is_regular_file())
+          text += "== " + entry.path().filename().string() + "\n" +
+                  ReadTextFile(entry.path());
+      }
+    }
+    return text.size() > max_chars ? text.substr(text.size() - max_chars)
+                                   : text;
+  }
+
+ private:
+  const std::filesystem::path workdir_;
+  const std::filesystem::path report_file_;
+  const std::filesystem::path status_file_;
+  JobObject job_;
+  ChildProcess child_;
+};
+
 class ForeignDisplayE2eTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -326,9 +465,6 @@ class ForeignDisplayE2eTest : public ::testing::Test {
                       "re-configure naming:"
                    << missing;
     }
-    ASSERT_TRUE(std::filesystem::exists(LicensePath()))
-        << "SCADA_SERVER_LICENSE_FILE must name the signed licence the "
-           "proxy runs under";
     // The library the configure named, before the first display opens:
     // DisplayRuntime loads once per process.
 #ifdef _WIN32
@@ -340,6 +476,46 @@ class ForeignDisplayE2eTest : public ::testing::Test {
     workdir_ = temp_dir_.path();
     std::filesystem::create_directories(workdir_ / "server");
     std::filesystem::create_directories(workdir_ / "designer");
+  }
+
+  // Steps 1 and 2 of both cases: the Designer binds Plant.Setpoint on
+  // `server` into the first shape of the client's fixture display and saves
+  // it as `vds`, and the binding it stored is checked to name the node by its
+  // namespace URI; then a write moves the value to kLiveValue. Leaves the
+  // braced binding in `binding`.
+  void BindAndMoveTheValue(const ForeignServer& server,
+                           const std::filesystem::path& vds,
+                           std::string& binding) {
+    int probe_exit = -1;
+    const std::string probe_output =
+        RunDesignerBind(server.endpoint_url(), kBoundObjectPath,
+                        std::filesystem::path{SCADA_E2E_DISPLAY_TEMPLATE}, vds,
+                        workdir_ / "designer", probe_exit);
+    ASSERT_EQ(probe_exit, 0) << probe_output;
+    ASSERT_TRUE(std::filesystem::exists(vds)) << probe_output;
+
+    // The reference the Designer stored names the node by its namespace URI,
+    // never by an index one session handed out.
+    std::smatch bound;
+    ASSERT_TRUE(
+        std::regex_search(probe_output, bound, std::regex{R"(bound (\S+))"}))
+        << probe_output;
+    binding = bound[1];
+    EXPECT_NE(binding.find(std::string{"nsu="} +
+                           std::string{kForeignNamespaceUri} + ";"),
+              std::string::npos)
+        << binding;
+    EXPECT_FALSE(std::regex_search(binding, std::regex{R"(\bNS\d+\.)"}))
+        << binding;
+    EXPECT_EQ(binding.find("ns="), std::string::npos) << binding;
+
+    // Something on the plant moves the value.
+    ClientConnection writer;
+    ASSERT_TRUE(writer.Connect(server.endpoint_url()));
+    const scada::NodeId node =
+        writer.Resolve(std::string_view{binding}.substr(1, binding.size() - 2));
+    ASSERT_FALSE(node.is_null()) << binding;
+    ASSERT_TRUE(writer.Write(node, scada::Variant{kLiveValue}));
   }
 
   AppEnvironment app_env_;
@@ -359,40 +535,16 @@ TEST_F(ForeignDisplayE2eTest,
   ASSERT_TRUE(server.started())
       << "open62541 did not start; see " << workdir_ / "server";
 
-  // 1. The Designer binds the object and saves the display.
+  ASSERT_TRUE(std::filesystem::exists(LicensePath()))
+      << "SCADA_SERVER_LICENSE_FILE must name the signed licence the "
+         "proxy runs under";
+
+  // 1, 2. The Designer binds the object and saves the display; the value
+  // moves.
   const std::filesystem::path vds = workdir_ / "foreign.vds";
-  int probe_exit = -1;
-  const std::string probe_output =
-      RunDesignerBind(server.endpoint_url(), kBoundObjectPath,
-                      std::filesystem::path{SCADA_E2E_DISPLAY_TEMPLATE}, vds,
-                      workdir_ / "designer", probe_exit);
-  ASSERT_EQ(probe_exit, 0) << probe_output;
-  ASSERT_TRUE(std::filesystem::exists(vds)) << probe_output;
-
-  // The reference the Designer stored names the node by its namespace URI,
-  // never by an index one session handed out.
-  std::smatch bound;
-  ASSERT_TRUE(
-      std::regex_search(probe_output, bound, std::regex{R"(bound (\S+))"}))
-      << probe_output;
-  const std::string binding = bound[1];
-  EXPECT_NE(binding.find(std::string{"nsu="} +
-                         std::string{kForeignNamespaceUri} + ";"),
-            std::string::npos)
-      << binding;
-  EXPECT_FALSE(std::regex_search(binding, std::regex{R"(\bNS\d+\.)"}))
-      << binding;
-  EXPECT_EQ(binding.find("ns="), std::string::npos) << binding;
-
-  // 2. Something on the plant moves the value.
-  {
-    ClientConnection writer;
-    ASSERT_TRUE(writer.Connect(server.endpoint_url()));
-    const scada::NodeId node =
-        writer.Resolve(std::string_view{binding}.substr(1, binding.size() - 2));
-    ASSERT_FALSE(node.is_null()) << binding;
-    ASSERT_TRUE(writer.Write(node, scada::Variant{kLiveValue}));
-  }
+  std::string binding;
+  BindAndMoveTheValue(server, vds, binding);
+  ASSERT_FALSE(HasFatalFailure());
 
   // 3. The client opens the display against open62541.
   Shown direct;
@@ -467,6 +619,64 @@ TEST_F(ForeignDisplayE2eTest,
   EXPECT_DOUBLE_EQ(*proxied.reading->value, *direct.reading->value);
   EXPECT_EQ(proxied.reading->text, direct.reading->text);
   proxy.Terminate();
+}
+
+// Decision B, through the client itself. The Designer-bound display is
+// copied into the client's public folder before sign-in; client_qt signs in
+// to open62541 through its own login, lists the file in the main window's
+// Display menu, and opening that row shows the live value on the schematic,
+// quality Good.
+TEST_F(ForeignDisplayE2eTest,
+       TheDisplayMenuOpensADesignerBoundDisplayInTheClient) {
+  ForeignServer server{std::filesystem::path{SCADA_E2E_FOREIGN_SERVER_EXE},
+                       ports_.Allocate(), workdir_ / "server"};
+  ASSERT_TRUE(server.started())
+      << "open62541 did not start; see " << workdir_ / "server";
+
+  const std::filesystem::path vds = workdir_ / "foreign.vds";
+  std::string binding;
+  BindAndMoveTheValue(server, vds, binding);
+  ASSERT_FALSE(HasFatalFailure());
+
+  // What the operator does by hand: copy the file into the public folder.
+  // With --test-data-dir the public folder is that directory.
+  const std::filesystem::path data_dir = workdir_ / "ClientData";
+  std::filesystem::create_directories(data_dir);
+  std::filesystem::copy_file(
+      vds, data_dir / (std::string{kPublicFileStem} + ".vds"));
+
+  GuiClient client{
+      workdir_ / "client", data_dir,
+      server.endpoint_url().substr(std::string_view{"opc.tcp://"}.size())};
+  const std::string report = client.WaitForReport(Timeout(120s));
+  RecordProperty("report", report);
+  // The scratch directory goes with the test, so a failure carries the
+  // client's own account of the run.
+  const auto context = [&] {
+    return "client status '" + client.status() + "'; report:\n" + report +
+           "\nclient log tail:\n" + client.LogTail(4000);
+  };
+
+  ASSERT_FALSE(report.empty()) << context();
+  EXPECT_THAT(ReportValues(report, "row"),
+              testing::Contains(std::string{kPublicFileStem}))
+      << context();
+  EXPECT_THAT(ReportValues(report, "opened-view"),
+              testing::ElementsAre("VidiconDisplay"))
+      << context();
+  EXPECT_THAT(ReportValues(report, "data-source"), testing::Contains(binding))
+      << context();
+
+  const std::vector<std::string> readings = ReportValues(report, "reading");
+  ASSERT_EQ(readings.size(), 1u) << context();
+  const std::optional<ReportedReading> reading =
+      ParseReportedReading(readings.front());
+  ASSERT_TRUE(reading) << readings.front();
+  EXPECT_EQ(reading->data_source, binding);
+  EXPECT_EQ(reading->quality, 0) << context();
+  ASSERT_TRUE(reading->value) << context();
+  EXPECT_DOUBLE_EQ(*reading->value, kLiveValue) << context();
+  EXPECT_NE(report.find("display-menu: ok"), std::string::npos) << context();
 }
 
 }  // namespace

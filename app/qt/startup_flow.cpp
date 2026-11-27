@@ -24,6 +24,7 @@ Awaitable<void> RunQtStartupFlowAsync(QtStartupFlowContext context) {
     co_await context.run_hardware_tree_devices_check();
     co_await context.run_historical_timed_data_check();
     co_await context.run_profile_save_check();
+    co_await context.run_display_menu_check();
 
     co_await context.run_application();
   } catch (...) {

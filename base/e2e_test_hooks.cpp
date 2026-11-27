@@ -27,6 +27,8 @@ constexpr std::string_view kTestProfileSaveFileOption =
     "test-profile-save-file";
 constexpr std::string_view kTestProfileSaveUserIdOption =
     "test-profile-save-user-id";
+constexpr std::string_view kTestDisplayMenuFileOption =
+    "test-display-menu-file";
 
 std::atomic_bool& GetStatusReported() {
   static std::atomic_bool status_reported = false;
@@ -114,6 +116,10 @@ std::filesystem::path GetE2eProfileSaveReportPath() {
 
 std::string GetE2eProfileSaveUserId() {
   return GetOptionValue(kTestProfileSaveUserIdOption);
+}
+
+std::filesystem::path GetE2eDisplayMenuReportPath() {
+  return GetOptionPath(kTestDisplayMenuFileOption);
 }
 
 }  // namespace client

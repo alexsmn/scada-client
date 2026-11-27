@@ -103,5 +103,11 @@ Awaitable<void> RunE2eHardwareTreeDevicesCheck(ClientApplication& app,
 Awaitable<void> RunE2eHistoricalTimedDataCheck(ClientApplication& app,
                                                AnyExecutor executor);
 Awaitable<void> RunE2eProfileSaveCheck(ClientApplication& app);
+// The public folder to an open schematic, as an operator reaches it: shows
+// the main window's Display menu, lists its rows, activates the first, and
+// waits for the schematic it opened to be given a good reading. Reports to
+// --test-display-menu-file; does nothing without it.
+Awaitable<void> RunE2eDisplayMenuCheck(ClientApplication& app,
+                                       AnyExecutor executor);
 
 }  // namespace client

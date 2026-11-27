@@ -218,6 +218,10 @@ int main(int argc, char* argv[]) {
             },
         .run_profile_save_check =
             [&app] { return client::RunE2eProfileSaveCheck(app); },
+        .run_display_menu_check =
+            [&app, executor] {
+              return client::RunE2eDisplayMenuCheck(app, executor);
+            },
         .run_application = [&app] { return app.Run(); },
         .log_startup_exception = &LogStartupException,
         .report_startup_success_if_unset =
