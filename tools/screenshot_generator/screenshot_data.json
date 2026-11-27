@@ -1842,14 +1842,14 @@
     {
       "type": "NewProps",
       "filename": "config-parameters.png",
-      "width": 640,
+      "width": 693,
       "height": 480,
       "path": "TS.702"
     },
     {
       "type": "NewProps",
       "filename": "config-address-map.png",
-      "width": 640,
+      "width": 693,
       "height": 480,
       "path": "TS.702",
       "click_object": "addressMapSubtab"
@@ -1866,7 +1866,7 @@
       "_comment": "The Properties window on a TI, opened on a category tab. Every category tab needs the fixture's property categories (ScadaTestAddressSpace::AddPropertyCategories); clicking one by its objectName (SectionSubtabObjectName) is also the guard: without the categories the form has only «Атрибуты» and «Прочее», and click_object fails. 984 is the form bar's own minimum width with eight tabs, so a narrower spec would be clamped to it.",
       "type": "NewProps",
       "filename": "ti-parameters.png",
-      "width": 984,
+      "width": 1077,
       "height": 320,
       "path": "TIT.212",
       "click_object": "sectionSubtab:Уставки"
@@ -1874,7 +1874,7 @@
     {
       "type": "NewProps",
       "filename": "ti-channel.png",
-      "width": 984,
+      "width": 1077,
       "height": 560,
       "path": "TIT.212",
       "click_object": "sectionSubtab:Каналы"
@@ -1882,7 +1882,7 @@
     {
       "type": "NewProps",
       "filename": "ts-channel.png",
-      "width": 710,
+      "width": 809,
       "height": 560,
       "path": "TS.201",
       "click_object": "sectionSubtab:Каналы"

@@ -76,6 +76,23 @@ std::unique_ptr<UiView> NodePropertyController::Init(
                   form_ptr->SetAddressMap(std::move(rows));
                 co_return;
               });
+      // Retitle with the object's name once the node is loaded. Built before
+      // the fetch, the form fell back to the node id, so the editor read
+      // «TS.702» rather than «Ретрансляция КП-02 MODBUS» (UX audit 2026-11-25,
+      // item 4.5); the id stays as the title's tooltip.
+      CoSpawn(
+          executor_,
+          [node = property_model_->node(),
+           form_ptr = QPointer<DeviceParameterForm>{
+               form}]() mutable -> Awaitable<void> {
+            const NodeRef fetched = co_await node.Fetch();
+            if (form_ptr && fetched) {
+              form_ptr->SetTitle(
+                  QString::fromStdU16String(ToString16(fetched.display_name())),
+                  QString::fromStdString(ToString(fetched.node_id())));
+            }
+            co_return;
+          });
       // Likewise the limits preview from the device's analog data items.
       CoSpawn(executor_,
               [executor = executor_, device = property_model_->node(),

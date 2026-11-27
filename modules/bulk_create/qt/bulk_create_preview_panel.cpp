@@ -246,22 +246,25 @@ void BulkCreatePreviewPanel::Refresh() {
   }
 
   const BulkCreateSummary summary = SummarizeBulkCreate(rows_);
-  // e.g. "23 new · 1 conflict".
-  QString text = QStringLiteral("%1 %2").arg(summary.new_count).arg(Tr("new"));
+  // e.g. «Новые: 23 · Конфликты: 1». Label first, count second: a count
+  // before a Russian adjective needs three plural forms, and «5 новый» shipped
+  // with the singular (UX audit 2026-11-25, item 4.9).
+  QString text =
+      QStringLiteral("%1 %2").arg(Tr("New items:")).arg(summary.new_count);
   if (summary.conflict_count > 0) {
     text += QStringLiteral(" · %1 %2")
-                .arg(summary.conflict_count)
-                .arg(Tr("conflict"));
+                .arg(Tr("Conflicts:"))
+                .arg(summary.conflict_count);
   }
   if (summary.duplicate_address_count > 0) {
     text += QStringLiteral(" · %1 %2")
-                .arg(summary.duplicate_address_count)
-                .arg(Tr("duplicate address"));
+                .arg(Tr("Duplicate addresses:"))
+                .arg(summary.duplicate_address_count);
   }
   if (summary.out_of_range_count > 0) {
     text += QStringLiteral(" · %1 %2")
-                .arg(summary.out_of_range_count)
-                .arg(Tr("out of range"));
+                .arg(Tr("Out of range:"))
+                .arg(summary.out_of_range_count);
   }
   summary_->setText(text);
 }

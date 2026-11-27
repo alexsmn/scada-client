@@ -65,17 +65,21 @@ QWidget* Debugger::CreateRequestView(QWidget* parent) {
   QSplitter* splitter = new QSplitter{parent};
   splitter->setOrientation(Qt::Horizontal);
 
+  // Translated like the rest of the window: the headers were the only English
+  // left in it (UX audit 2026-11-25, item 4.5). «ID» stays as it is.
   std::vector<scada::aui::TableColumn> request_table_columns{
       {.id = 0, .title = u"ID", .alignment = scada::aui::TableColumn::RIGHT},
-      {.id = 1, .title = u"Phase", .alignment = scada::aui::TableColumn::LEFT},
+      {.id = 1,
+       .title = Translate("Phase"),
+       .alignment = scada::aui::TableColumn::LEFT},
       {.id = 2,
-       .title = u"Start Time",
+       .title = Translate("Start time"),
        .alignment = scada::aui::TableColumn::LEFT},
       {.id = 3,
-       .title = u"Duration",
+       .title = Translate("Duration"),
        .alignment = scada::aui::TableColumn::LEFT},
       {.id = 4,
-       .title = u"Title",
+       .title = Translate("Request"),
        .width = 200,
        .alignment = scada::aui::TableColumn::LEFT}};
 

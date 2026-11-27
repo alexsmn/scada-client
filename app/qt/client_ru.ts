@@ -882,6 +882,43 @@
         <source>new</source>
         <translation>новый</translation>
     </message>
+    <!-- properties/transport/transport_dialog_model.cpp: connection types. -->
+    <message>
+        <source>TCP client</source>
+        <translation>TCP-клиент</translation>
+    </message>
+    <message>
+        <source>TCP server</source>
+        <translation>TCP-сервер</translation>
+    </message>
+    <message>
+        <source>UDP client</source>
+        <translation>UDP-клиент</translation>
+    </message>
+    <message>
+        <source>UDP server</source>
+        <translation>UDP-сервер</translation>
+    </message>
+    <message>
+        <source>Serial port</source>
+        <translation>Последовательный порт</translation>
+    </message>
+    <message>
+        <source>New items:</source>
+        <translation>Новые:</translation>
+    </message>
+    <message>
+        <source>Conflicts:</source>
+        <translation>Конфликты:</translation>
+    </message>
+    <message>
+        <source>Duplicate addresses:</source>
+        <translation>Повтор адреса:</translation>
+    </message>
+    <message>
+        <source>Out of range:</source>
+        <translation>Вне диапазона:</translation>
+    </message>
     <message>
         <source>exists</source>
         <translation>существует</translation>
@@ -1249,6 +1286,30 @@
     <message>
         <source>no response from device</source>
         <translation>устройство не отвечает</translation>
+    </message>
+    <message>
+        <source>Phase</source>
+        <translation>Этап</translation>
+    </message>
+    <message>
+        <source>Start time</source>
+        <translation>Начало</translation>
+    </message>
+    <message>
+        <source>Duration</source>
+        <translation>Длительность</translation>
+    </message>
+    <message>
+        <source>Request</source>
+        <translation>Запрос</translation>
+    </message>
+    <message>
+        <source>Succeeded</source>
+        <translation>Выполнен</translation>
+    </message>
+    <message>
+        <source>In progress</source>
+        <translation>Выполняется</translation>
     </message>
     <message>
         <source>link is up; the device does not answer</source>

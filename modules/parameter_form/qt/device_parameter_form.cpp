@@ -11,12 +11,14 @@
 #include <QAction>
 #include <QApplication>
 #include <QComboBox>
+#include <QFontMetricsF>
 #include <QFormLayout>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QResizeEvent>
 #include <QScrollArea>
 #include <QSignalBlocker>
 #include <QStackedWidget>
@@ -27,6 +29,7 @@
 #include <QVBoxLayout>
 
 #include <algorithm>
+#include <cmath>
 #include <memory>
 #include <string_view>
 #include <utility>
@@ -48,6 +51,49 @@ QString Tr(std::string_view text) {
 bool IsSection(PropertyGroup& group, int index) {
   return group.GetSubgroup(index) != nullptr;
 }
+
+// The form's title: asks for its whole text but gives way to the subtabs,
+// eliding to the width it is granted. A plain QLabel's minimum is its whole
+// text, so an object's name («Ретрансляция КП-02 MODBUS» rather than the id it
+// once showed) widened the whole form (UX audit 2026-11-25, item 4.5).
+class ElidedTitleLabel : public QLabel {
+ public:
+  void SetFullText(QString text) {
+    full_text_ = std::move(text);
+    updateGeometry();
+    Elide();
+  }
+
+  QSize sizeHint() const override {
+    // Fractional advance, rounded up, plus a pixel: elidedText measures in
+    // fractions and elides a string granted exactly its integer advance.
+    const int text_width =
+        static_cast<int>(
+            std::ceil(QFontMetricsF{font()}.horizontalAdvance(full_text_))) +
+        1;
+    return {text_width + contentsMargins().left() + contentsMargins().right(),
+            QLabel::sizeHint().height()};
+  }
+
+  QSize minimumSizeHint() const override {
+    return {fontMetrics().averageCharWidth() * 4,
+            QLabel::minimumSizeHint().height()};
+  }
+
+ protected:
+  void resizeEvent(QResizeEvent* event) override {
+    QLabel::resizeEvent(event);
+    Elide();
+  }
+
+ private:
+  void Elide() {
+    setText(fontMetrics().elidedText(full_text_, Qt::ElideRight,
+                                     contentsRect().width()));
+  }
+
+  QString full_text_;
+};
 
 }  // namespace
 
@@ -75,9 +121,18 @@ DeviceParameterForm::DeviceParameterForm(scada::aui::PropertyModel& model,
   bar_layout->setContentsMargins(14, 6, 14, 6);
   bar_layout->setSpacing(8);
 
-  title_label_ = new QLabel{title_};
+  auto* title_label = new ElidedTitleLabel;
+  title_label_ = title_label;
+  // The weight through the font, not the stylesheet: the label measures its
+  // size hint before a stylesheet is polished in, so a bold title measured
+  // in the regular face and elided with room to spare.
   title_label_->setStyleSheet(
-      QStringLiteral("color:%1;font-weight:600;").arg(tokens.fg.name()));
+      QStringLiteral("color:%1;").arg(tokens.fg.name()));
+  QFont title_font = title_label_->font();
+  title_font.setWeight(QFont::DemiBold);
+  title_label_->setFont(title_font);
+  title_label_->setToolTip(title_);
+  title_label->SetFullText(title_);
   bar_layout->addWidget(title_label_);
 
   dirty_dot_ = new QLabel;
@@ -424,6 +479,15 @@ void DeviceParameterForm::Rebuild() {
   UpdateDirtyUi();
 }
 
+void DeviceParameterForm::SetTitle(QString title, QString node_id) {
+  if (title.isEmpty())
+    return;
+  title_ = std::move(title);
+  title_label_->setToolTip(node_id.isEmpty() ? title_
+                                             : title_ + QChar{u'\n'} + node_id);
+  static_cast<ElidedTitleLabel*>(title_label_)->SetFullText(title_);
+}
+
 void DeviceParameterForm::SetAddressMap(std::vector<AddressMapRow> rows) {
   address_map_ = std::move(rows);
   Rebuild();
@@ -542,20 +606,22 @@ QWidget* DeviceParameterForm::BuildAddressMapPage() {
 }
 
 QWidget* DeviceParameterForm::BuildLimitsPage() {
+  // The Inspector's words and order for the same four limits, highest first:
+  // this grid said «LoLo / Lo / Hi / HiHi» in English, low to high, while the
+  // Inspector beside it said «Верхняя аварийная … Нижняя аварийная» (UX audit
+  // 2026-11-25, item 4.8).
   QTableWidget* table = MakeReadOnlyGrid(
       QStringLiteral("limitsTable"),
-      {Tr("Signal"), QStringLiteral("LoLo"), QStringLiteral("Lo"),
-       QStringLiteral("Hi"), QStringLiteral("HiHi")},
-      FormTokens());
+      {Tr("Signal"), Tr("HiHi"), Tr("Hi"), Tr("Lo"), Tr("LoLo")}, FormTokens());
   table->setRowCount(static_cast<int>(limits_.size()));
   for (int row = 0; row < static_cast<int>(limits_.size()); ++row) {
     const LimitRow& data = limits_[row];
     FillGridRow(
         table, row,
         {QString::fromStdU16String(data.signal),
-         QString::fromStdU16String(data.lolo),
-         QString::fromStdU16String(data.lo), QString::fromStdU16String(data.hi),
-         QString::fromStdU16String(data.hihi)});
+         QString::fromStdU16String(data.hihi),
+         QString::fromStdU16String(data.hi), QString::fromStdU16String(data.lo),
+         QString::fromStdU16String(data.lolo)});
   }
   return table;
 }

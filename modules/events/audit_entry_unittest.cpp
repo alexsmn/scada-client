@@ -3,6 +3,7 @@
 #include "model/namespaces.h"
 #include "scada/event.h"
 #include "scada/standard_node_ids.h"
+#include "scada/status.h"
 
 #include <gtest/gtest.h>
 
@@ -98,6 +99,20 @@ TEST(AuditEntry, ASessionAuditTakesItsOutcomeFromSeverity) {
   EXPECT_EQ(refused.outcome, AuditOutcome::kDenied);
   EXPECT_EQ(refused.status, u"");
   EXPECT_EQ(AuditOutcomeLabel(refused), u"✕ Denied");
+}
+
+// UX audit 2026-11-25, item 4.5: a refusal's status reads in the client's
+// words when the UI has installed them, not as the server's symbolic name.
+TEST(AuditEntry, ADeniedStatusReadsInTheInstalledWords) {
+  scada::SetStatusTextProvider([](scada::StatusCode code) -> std::u16string {
+    return code == scada::StatusCode::Bad_UserAccessDenied ? u"access denied"
+                                                           : u"other";
+  });
+  AuditEntry entry;
+  entry.outcome = AuditOutcome::kDenied;
+  entry.status = u"Bad_UserAccessDenied";
+  EXPECT_EQ(AuditOutcomeLabel(entry), u"\u2715 Denied: access denied");
+  scada::SetStatusTextProvider(nullptr);
 }
 
 }  // namespace

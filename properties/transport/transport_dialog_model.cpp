@@ -1,9 +1,10 @@
 ﻿#include "transport_dialog_model.h"
 
-#include "base/u16format.h"
+#include "aui/translation.h"
 #include "base/format.h"
-#include <boost/algorithm/string/predicate.hpp>
+#include "base/u16format.h"
 #include "base/utf_convert.h"
+#include <boost/algorithm/string/predicate.hpp>
 
 #include <algorithm>
 #include <format>
@@ -20,8 +21,11 @@ enum ConnectionType {
   CONNECTION_TYPE_COUNT
 };
 
-static const std::u16string_view kConnectionTypeStrings[] = {
-    u"TCP Client", u"TCP Server", u"UDP Client", u"UDP Server", u"Serial Port"};
+// Untranslated keys for Translate(): the dialog showed them in English inside a
+// Russian UI (UX audit 2026-11-25, item 4.5). The combo maps back by index,
+// so the words are free to change.
+static const std::string_view kConnectionTypeStrings[] = {
+    "TCP client", "TCP server", "UDP client", "UDP server", "Serial port"};
 
 static const unsigned kBaudRates[] = {
     75,   110,  134,  150,   300,   600,   1200,  1800,   2400,
@@ -73,10 +77,11 @@ TransportDialogModel::TransportDialogModel(
     : transport_string_{transport_string} {
   static_assert(std::size(kConnectionTypeStrings) == CONNECTION_TYPE_COUNT,
                 "NotEnoughConnectionTypeStrings");
-  for (const auto& str : kConnectionTypeStrings)
-    type_items.emplace_back(str);
+  for (std::string_view str : kConnectionTypeStrings)
+    type_items.emplace_back(Translate(str));
 
-  transport::TransportString::Protocol protocol = transport_string_.GetProtocol();
+  transport::TransportString::Protocol protocol =
+      transport_string_.GetProtocol();
   bool active = transport_string_.active();
 
   ConnectionType connection_type = CONNECTION_TYPE_COUNT;
@@ -125,7 +130,8 @@ TransportDialogModel::TransportDialogModel(
     flow_control_items.emplace_back(kFlowControlStrings[i].first);
 
   if (connection_type != CONNECTION_TYPE_SERIAL) {
-    auto host_sv = transport_string_.GetParamStr(transport::TransportString::kParamHost);
+    auto host_sv =
+        transport_string_.GetParamStr(transport::TransportString::kParamHost);
     network_host = UtfConvert<char16_t>(host_sv);
     network_port =
         transport_string_.GetParamInt(transport::TransportString::kParamPort);
@@ -137,8 +143,8 @@ TransportDialogModel::TransportDialogModel(
     serial_port_index = std::max(0, port_no - 1);
 
     {
-      auto baud_rate = static_cast<unsigned>(
-          transport_string_.GetParamInt(transport::TransportString::kParamBaudRate));
+      auto baud_rate = static_cast<unsigned>(transport_string_.GetParamInt(
+          transport::TransportString::kParamBaudRate));
       int index = -1;
       for (size_t i = 0; i < std::size(kBaudRates); ++i)
         if (kBaudRates[i] == baud_rate) {
@@ -149,8 +155,8 @@ TransportDialogModel::TransportDialogModel(
     }
 
     {
-      int bit_count =
-          transport_string_.GetParamInt(transport::TransportString::kParamByteSize);
+      int bit_count = transport_string_.GetParamInt(
+          transport::TransportString::kParamByteSize);
       int index = (bit_count >= kBitCountFirst && bit_count <= kBitCountLast)
                       ? bit_count - kBitCountFirst
                       : -1;
@@ -158,16 +164,16 @@ TransportDialogModel::TransportDialogModel(
     }
 
     {
-      const auto parity =
-          transport_string_.GetParamStr(transport::TransportString::kParamParity);
+      const auto parity = transport_string_.GetParamStr(
+          transport::TransportString::kParamParity);
       int index =
           FindStringPair(kParityStrings, std::size(kParityStrings), parity);
       parity_index = index + 1;
     }
 
     {
-      const auto stopbits =
-          transport_string_.GetParamStr(transport::TransportString::kParamStopBits);
+      const auto stopbits = transport_string_.GetParamStr(
+          transport::TransportString::kParamStopBits);
       int index =
           FindString(kStopBitsStrings, std::size(kStopBitsStrings), stopbits);
       stop_bits_index = index + 1;
@@ -214,7 +220,8 @@ void TransportDialogModel::Save() {
   if (type != CONNECTION_TYPE_SERIAL) {
     transport_string_.SetParam(transport::TransportString::kParamHost,
                                UtfConvert<char>(network_host));
-    transport_string_.SetParam(transport::TransportString::kParamPort, network_port);
+    transport_string_.SetParam(transport::TransportString::kParamPort,
+                               network_port);
 
   } else {
     {
@@ -231,7 +238,8 @@ void TransportDialogModel::Save() {
         transport_string_.SetParam(transport::TransportString::kParamBaudRate,
                                    kBaudRates[i - 1]);
       } else
-        transport_string_.RemoveParam(transport::TransportString::kParamBaudRate);
+        transport_string_.RemoveParam(
+            transport::TransportString::kParamBaudRate);
     }
 
     {
@@ -241,7 +249,8 @@ void TransportDialogModel::Save() {
         transport_string_.SetParam(transport::TransportString::kParamByteSize,
                                    bitcount);
       } else
-        transport_string_.RemoveParam(transport::TransportString::kParamByteSize);
+        transport_string_.RemoveParam(
+            transport::TransportString::kParamByteSize);
     }
 
     {
@@ -259,16 +268,19 @@ void TransportDialogModel::Save() {
         transport_string_.SetParam(transport::TransportString::kParamStopBits,
                                    kStopBitsStrings[i - 1]);
       } else
-        transport_string_.RemoveParam(transport::TransportString::kParamStopBits);
+        transport_string_.RemoveParam(
+            transport::TransportString::kParamStopBits);
     }
 
     {
       int i = flow_control_index;
       if (i >= 1) {
-        transport_string_.SetParam(transport::TransportString::kParamFlowControl,
-                                   kFlowControlStrings[i - 1].second);
+        transport_string_.SetParam(
+            transport::TransportString::kParamFlowControl,
+            kFlowControlStrings[i - 1].second);
       } else
-        transport_string_.RemoveParam(transport::TransportString::kParamFlowControl);
+        transport_string_.RemoveParam(
+            transport::TransportString::kParamFlowControl);
     }
   }
 }

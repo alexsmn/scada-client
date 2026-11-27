@@ -1,11 +1,14 @@
 #include "events/audit_entry.h"
 
 #include "aui/translation.h"
+#include "base/utf_convert.h"
 #include "model/namespaces.h"
 #include "scada/event.h"
 #include "scada/standard_node_ids.h"
+#include "scada/status.h"
 
 #include <array>
+#include <optional>
 #include <string_view>
 #include <utility>
 
@@ -94,8 +97,14 @@ std::u16string AuditOutcomeLabel(const AuditEntry& entry) {
       return u"✓ " + Translate("Applied");
     case AuditOutcome::kDenied: {
       std::u16string label = u"✕ " + Translate("Denied");
-      if (!entry.status.empty())
-        label += u": " + entry.status;
+      // The server names the status symbolically («Bad_UserAccessDenied»);
+      // say it in the client's words when the code is known (UX audit
+      // 2026-11-25, item 4.5), and keep the name when it is not.
+      if (!entry.status.empty()) {
+        const std::optional<scada::StatusCode> code = StatusCodeFromName(
+            UtfConvert<char>(std::u16string_view{entry.status}));
+        label += u": " + (code ? ToString16(*code) : entry.status);
+      }
       return label;
     }
     case AuditOutcome::kUnknown:

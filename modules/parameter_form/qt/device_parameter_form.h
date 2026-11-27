@@ -58,6 +58,10 @@ class DeviceParameterForm : public QWidget {
   // Discards every staged edit, restoring fields to the model's live values.
   void Revert();
 
+  // Replaces the bar's title with the object's name once it is known, and
+  // puts `node_id` in its tooltip. An empty `title` keeps the current one.
+  void SetTitle(QString title, QString node_id);
+
   // Supplies the device's address-map rows. When non-empty, an extra read-only
   // "Address map" tab is shown after the property-group tabs
   // (config-workbench's address-map preview). Passing an empty list removes the

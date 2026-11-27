@@ -1,6 +1,7 @@
 #include "modules/debugger/request_table_model.h"
 
 #include "aui/severity_colors.h"
+#include "aui/translation.h"
 #include "base/format.h"
 #include "base/time_utils.h"
 #include "base/utf_convert.h"
@@ -35,6 +36,24 @@ int RequestTableModel::GetRowCount() {
   return static_cast<int>(visible_.size());
 }
 
+namespace {
+
+// The phase in the display language; ToString(phase) is the protocol's own
+// English word and stays in the dump below.
+std::u16string PhaseText(scada::SessionDebugger::RequestPhase phase) {
+  switch (DebugStatusFor(phase)) {
+    case DebugStatus::kOk:
+      return Translate("Succeeded");
+    case DebugStatus::kError:
+      return Translate("Failed");
+    case DebugStatus::kRunning:
+      break;
+  }
+  return Translate("In progress");
+}
+
+}  // namespace
+
 void RequestTableModel::GetCell(scada::aui::TableCell& cell) {
   const auto& request = requests_[visible_[cell.row]];
 
@@ -61,7 +80,7 @@ void RequestTableModel::GetCell(scada::aui::TableCell& cell) {
       cell.text = WideFormat(request.request_id);
       break;
     case 1:
-      cell.text = UtfConvert<char16_t>(ToString(request.phase));
+      cell.text = PhaseText(request.phase);
       break;
     case 2:
       cell.text = UtfConvert<char16_t>(std::format("{}", request.start_time));
@@ -69,8 +88,9 @@ void RequestTableModel::GetCell(scada::aui::TableCell& cell) {
     case 3:
       if (request.finish_time != RequestTime{}) {
         auto duration = request.finish_time - request.start_time;
-        cell.text = UtfConvert<char16_t>(
-            std::format("{} ms", InMilliseconds(duration)));
+        cell.text =
+            UtfConvert<char16_t>(std::format("{} ", InMilliseconds(duration))) +
+            Translate("ms");
       }
       break;
     case 4:

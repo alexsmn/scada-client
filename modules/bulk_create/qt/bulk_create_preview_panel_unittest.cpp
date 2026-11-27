@@ -68,8 +68,8 @@ TEST_F(BulkCreatePreviewPanelTest, ConflictRowIsFlaggedAndCountedInSummary) {
 
   auto* summary = panel.findChild<QLabel*>(QStringLiteral("previewSummary"));
   ASSERT_NE(summary, nullptr);
-  EXPECT_TRUE(summary->text().contains(QStringLiteral("11 new")));
-  EXPECT_TRUE(summary->text().contains(QStringLiteral("1 conflict")));
+  EXPECT_TRUE(summary->text().contains(QStringLiteral("New items: 11")));
+  EXPECT_TRUE(summary->text().contains(QStringLiteral("Conflicts: 1")));
 }
 
 // The grid's third status, and the proof that the panel's own spin boxes can
@@ -103,7 +103,7 @@ TEST_F(BulkCreatePreviewPanelTest, OutOfRangeIoaIsFlaggedAndCounted) {
 
   auto* summary = panel.findChild<QLabel*>(QStringLiteral("previewSummary"));
   ASSERT_NE(summary, nullptr);
-  EXPECT_TRUE(summary->text().contains(QStringLiteral("out of range")));
+  EXPECT_TRUE(summary->text().contains(QStringLiteral("Out of range:")));
 }
 
 TEST_F(BulkCreatePreviewPanelTest, EditingCountSpinLiveUpdatesTheGrid) {
@@ -198,7 +198,8 @@ TEST_F(BulkCreatePreviewPanelTest, SetParamsAppliesTheSubjectItIsGiven) {
   EXPECT_EQ(panel.rows()[11].ioa, params.ioa_start + 11);
 }
 
-TEST_F(BulkCreatePreviewPanelTest, AFreshPanelHidesTheAddressColumnItCannotFill) {
+TEST_F(BulkCreatePreviewPanelTest,
+       AFreshPanelHidesTheAddressColumnItCannotFill) {
   // kDataItem is the default for both the panel and the params, so a panel
   // nobody configures must already agree with it rather than waiting for a
   // SetSubject that -- being a no-op change -- would never arrive.

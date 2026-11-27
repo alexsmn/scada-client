@@ -228,6 +228,29 @@ TEST_F(DeviceParameterFormTest, RendersAndAppliesNestedGroupFields) {
   EXPECT_EQ(input_ptr->writes[0].second, u"INT16:40771");
 }
 
+// UX audit 2026-11-25, item 4.5: the form is titled with the object's name
+// once known, the id in the tooltip, and a long name gives way rather than
+// widening the form.
+TEST_F(DeviceParameterFormTest, ALongTitleDoesNotWidenTheForm) {
+  auto short_model = MakeDeviceModel();
+  DeviceParameterForm short_form{*short_model, QStringLiteral("TS.702")};
+  auto long_model = MakeDeviceModel();
+  DeviceParameterForm long_form{*long_model, QStringLiteral("TS.702")};
+  long_form.SetTitle(QStringLiteral("A very long retransmission device name "
+                                    "that no tab bar could ever fit"),
+                     QStringLiteral("TS.702"));
+
+  EXPECT_EQ(long_form.minimumSizeHint().width(),
+            short_form.minimumSizeHint().width());
+  bool has_tooltip = false;
+  for (QLabel* label : long_form.findChildren<QLabel*>()) {
+    if (label->toolTip().contains(QStringLiteral("TS.702")) &&
+        label->toolTip().startsWith(QStringLiteral("A very long")))
+      has_tooltip = true;
+  }
+  EXPECT_TRUE(has_tooltip);
+}
+
 // UX audit 2026-11-25, item 4.4: a plain field the model lists after a section
 // is laid out before the sections, so it never reads as part of the section
 // above it — «Условие управления» used to sit under «Резервный ввод».
@@ -506,9 +529,10 @@ TEST_F(DeviceParameterFormTest, SetLimitsAddsAReadOnlyGridTab) {
   EXPECT_EQ(table->editTriggers(), QAbstractItemView::NoEditTriggers);
   ASSERT_EQ(table->rowCount(), 2);
   EXPECT_EQ(table->item(0, 0)->text(), QStringLiteral("Power"));
-  EXPECT_EQ(table->item(0, 1)->text(), QStringLiteral("113"));  // LoLo
-  EXPECT_EQ(table->item(0, 4)->text(), QStringLiteral("138"));  // HiHi
-  EXPECT_EQ(table->item(1, 1)->text(), QString{});              // unset LoLo
+  // Highest first, as the Inspector lists them (UX audit item 4.8).
+  EXPECT_EQ(table->item(0, 1)->text(), QStringLiteral("138"));  // HiHi
+  EXPECT_EQ(table->item(0, 4)->text(), QStringLiteral("113"));  // LoLo
+  EXPECT_EQ(table->item(1, 4)->text(), QString{});              // unset LoLo
 }
 
 // Backlog 1073: the close question. Each case stages a Host edit, answers the
