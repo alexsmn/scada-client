@@ -198,3 +198,70 @@ add_dependencies(client_server_e2e_tests
 
 include(GoogleTest)
 gtest_discover_tests(client_server_e2e_tests DISCOVERY_MODE PRE_TEST)
+
+# ── client_foreign_display_e2e_tests ────────────────────────────────────────
+#
+# A display bound in the Designer against a third-party OPC UA server, opened
+# through the client's display path against that server and against a
+# scada-proxy aggregating it (docs/product/foreign-node-references.md, "What
+# ends this plan"). Three products take part and none of them as source, so
+# each is named by path, exactly as SCADA_E2E_IEC61850_DEVICE_EXE above:
+#
+#   SCADA_E2E_FOREIGN_SERVER_EXE  the superproject's scada_e2e_open62541_server
+#   SCADA_E2E_DESIGNER_PROBE_EXE  the Designer's designer_server_probe
+#
+# plus the proxy (SCADA_E2E_PROXY_EXE, or the in-build target) and the display
+# runtime (SCADA_DISPLAY_RUNTIME_LIBRARY). A path set but wrong is a hard
+# error; any of them absent builds the suite and SKIPs it, naming the flags.
+foreach(_var SCADA_E2E_FOREIGN_SERVER_EXE SCADA_E2E_DESIGNER_PROBE_EXE)
+  set(${_var} "" CACHE FILEPATH
+      "Named by path for client_foreign_display_e2e_tests")
+  if(${_var} AND NOT EXISTS "${${_var}}")
+    message(FATAL_ERROR "${_var} points at '${${_var}}', which does not exist.")
+  endif()
+endforeach()
+if(NOT SCADA_E2E_FOREIGN_SERVER_EXE OR NOT SCADA_E2E_DESIGNER_PROBE_EXE)
+  message(STATUS
+    "client_foreign_display_e2e_tests: built, but it will SKIP. To run it,\n"
+    "  build the superproject's scada_e2e_open62541_server and the Designer's\n"
+    "  designer_server_probe, then re-configure with\n"
+    "    -DSCADA_E2E_FOREIGN_SERVER_EXE=<path>\n"
+    "    -DSCADA_E2E_DESIGNER_PROBE_EXE=<path>")
+endif()
+
+add_executable(client_foreign_display_e2e_tests
+  "foreign_display_e2e_test.cpp"
+)
+
+target_precompile_headers(client_foreign_display_e2e_tests
+  REUSE_FROM scada_base)
+
+target_link_libraries(client_foreign_display_e2e_tests PRIVATE
+  base_unittest
+  client_base
+  # The display view's widget over the loaded runtime, and DisplayLiveData.
+  client_display_view_qt
+  # CreateAliasResolver, as ClientApplication builds the timed-data service.
+  client_services_qt
+  # AppEnvironment: the QApplication the widget needs.
+  aui_test_qt
+  scada_e2e_harness
+  # The client's OpcUa backend.
+  scada_opcua_bridge
+  transport
+  node_service
+  timed_data
+)
+
+target_compile_definitions(client_foreign_display_e2e_tests PRIVATE
+  SCADA_E2E_FOREIGN_SERVER_EXE="${SCADA_E2E_FOREIGN_SERVER_EXE}"
+  SCADA_E2E_DESIGNER_PROBE_EXE="${SCADA_E2E_DESIGNER_PROBE_EXE}"
+  SCADA_E2E_FOREIGN_DISPLAY_PROXY_EXE="${_scada_e2e_exe_PROXY}"
+  SCADA_E2E_FOREIGN_DISPLAY_SQLITE3_EXE="${SCADA_E2E_SQLITE3_EXE}"
+  SCADA_DISPLAY_RUNTIME_UNDER_TEST="${SCADA_DISPLAY_RUNTIME_LIBRARY}"
+  # The display the engineer opens and binds into: the client's own
+  # schematic fixture, the one the runtime's unit tests open.
+  SCADA_E2E_DISPLAY_TEMPLATE="${PROJECT_SOURCE_DIR}/tools/screenshot_generator/fixtures/substation.vds"
+)
+
+gtest_discover_tests(client_foreign_display_e2e_tests DISCOVERY_MODE PRE_TEST)
