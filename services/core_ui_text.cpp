@@ -142,15 +142,24 @@ constexpr StatusTextEntry kStatusTexts[] = {
     {scada::StatusCode::Bad_NotReadable,
      QT_TRANSLATE_NOOP("", "The value cannot be read")},
     {scada::StatusCode::Bad_TooManySessions,
-     QT_TRANSLATE_NOOP("", "The server has reached its maximum number of sessions")},
+     QT_TRANSLATE_NOOP(
+         "",
+         "The server has reached its maximum number of sessions")},
     {scada::StatusCode::Bad_TooManySubscriptions,
-     QT_TRANSLATE_NOOP("", "The server has reached its maximum number of subscriptions")},
+     QT_TRANSLATE_NOOP(
+         "",
+         "The server has reached its maximum number of subscriptions")},
     {scada::StatusCode::Bad_TooManyPublishRequests,
-     QT_TRANSLATE_NOOP("", "Too many update requests are queued on the server")},
+     QT_TRANSLATE_NOOP("",
+                       "Too many update requests are queued on the server")},
     {scada::StatusCode::Bad_CertificateHostNameInvalid,
-     QT_TRANSLATE_NOOP("", "The server certificate was not issued for this address")},
+     QT_TRANSLATE_NOOP(
+         "",
+         "The server certificate was not issued for this address")},
     {scada::StatusCode::Bad_CertificateUriInvalid,
-     QT_TRANSLATE_NOOP("", "The server certificate was issued for another application")},
+     QT_TRANSLATE_NOOP(
+         "",
+         "The server certificate was issued for another application")},
     {scada::StatusCode::Bad_CertificateUntrusted,
      QT_TRANSLATE_NOOP("", "The server certificate is not trusted")},
     {scada::StatusCode::Bad_CertificateInvalid,
@@ -161,6 +170,8 @@ constexpr StatusTextEntry kStatusTexts[] = {
      QT_TRANSLATE_NOOP("", "The server requires a secure connection")},
     {scada::StatusCode::Bad_IdentityChangeNotSupported,
      QT_TRANSLATE_NOOP("", "The server cannot change the user of a session")},
+    {scada::StatusCode::Bad_BrowseNameDuplicated,
+     QT_TRANSLATE_NOOP("", "An item of this name already exists here")},
 };
 
 struct QualifierFlagTextEntry {
